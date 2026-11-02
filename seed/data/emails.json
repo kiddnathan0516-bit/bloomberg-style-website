@@ -1,0 +1,349 @@
+[
+  {
+    "id": "E01",
+    "from": "john.smith@example.com",
+    "fromName": "John Smith",
+    "subject": "Q3 statement",
+    "body": "Hi team,\n\nAttached is my Schwab statement for Q3. Let me know if you need anything else.\n\nThanks,\nJohn",
+    "receivedAt": "2026-10-28T08:12:00-04:00",
+    "attachments": [
+      {
+        "docId": "D01",
+        "filename": "Statement_Q3.pdf"
+      }
+    ]
+  },
+  {
+    "id": "E02",
+    "from": "linda.smith@example.com",
+    "fromName": "Linda Smith",
+    "subject": "My 1099",
+    "body": "Hello,\nHere is my Fidelity 1099 for last year that you asked for.\nLinda",
+    "receivedAt": "2026-10-28T09:40:00-04:00",
+    "attachments": [
+      {
+        "docId": "D02",
+        "filename": "1099 2025.pdf"
+      }
+    ]
+  },
+  {
+    "id": "E03",
+    "from": "mary.chen@example.com",
+    "fromName": "Mary Chen",
+    "subject": "David's rollover paperwork",
+    "body": "Hi! David asked me to send this over since he's traveling. It's his signed rollover form for the old Acme 401k.\n\nBest,\nMary",
+    "receivedAt": "2026-10-28T10:05:00-04:00",
+    "attachments": [
+      {
+        "docId": "D03",
+        "filename": "rollover paperwork.pdf"
+      }
+    ]
+  },
+  {
+    "id": "E04",
+    "from": "david.chen@example.com",
+    "fromName": "David Chen",
+    "subject": "Docs you requested",
+    "body": "Attached are my Schwab statement and the Vanguard tax form.\n-David",
+    "receivedAt": "2026-10-28T13:22:00-04:00",
+    "attachments": [
+      {
+        "docId": "D04",
+        "filename": "schwab_stmt.pdf"
+      },
+      {
+        "docId": "D05",
+        "filename": "vanguard tax form.pdf"
+      }
+    ]
+  },
+  {
+    "id": "E05",
+    "from": "raj.patel@example.com",
+    "fromName": "Raj Patel",
+    "subject": "Signed questionnaire",
+    "body": "Hi, attached is the completed risk questionnaire for our onboarding.\nRaj",
+    "receivedAt": "2026-10-28T15:01:00-04:00",
+    "attachments": [
+      {
+        "docId": "D06",
+        "filename": "risk_questionnaire_signed.pdf"
+      }
+    ]
+  },
+  {
+    "id": "E06",
+    "from": "anil.patel@example.net",
+    "fromName": "Anil Patel",
+    "subject": "Account application",
+    "body": "Please find my signed Schwab account application attached.\n\nRegards,\nAnil Patel",
+    "receivedAt": "2026-10-29T08:30:00-04:00",
+    "attachments": [
+      {
+        "docId": "D07",
+        "filename": "Schwab application.pdf"
+      }
+    ]
+  },
+  {
+    "id": "E07",
+    "from": "jon.smyth88@example.net",
+    "fromName": "Jon Smyth",
+    "subject": "statement",
+    "body": "hey its me, sending from my personal email. attached my fidelity statement\n\n- Jon Smyth\nsent from my phone",
+    "receivedAt": "2026-10-29T09:15:00-04:00",
+    "attachments": [
+      {
+        "docId": "D08",
+        "filename": "fidelity statement.pdf"
+      }
+    ]
+  },
+  {
+    "id": "E08",
+    "from": "carlos.rodriguez@example.com",
+    "fromName": "Carlos Rodriguez",
+    "subject": "ID",
+    "body": "Here's a scan of my license for your records.",
+    "receivedAt": "2026-10-29T11:47:00-04:00",
+    "attachments": [
+      {
+        "docId": "D09",
+        "filename": "scan0001.pdf"
+      }
+    ]
+  },
+  {
+    "id": "E09",
+    "from": "elena.rodriguez@example.com",
+    "fromName": "Elena Rodriguez",
+    "subject": "Beneficiary form + insurance statement",
+    "body": "Hi, I updated my IRA beneficiaries (form attached) and also attached my annual life insurance statement.\nThanks, Elena",
+    "receivedAt": "2026-10-29T14:03:00-04:00",
+    "attachments": [
+      {
+        "docId": "D10",
+        "filename": "Beneficiary form.pdf"
+      },
+      {
+        "docId": "D11",
+        "filename": "life policy annual statement.pdf"
+      }
+    ]
+  },
+  {
+    "id": "E10",
+    "from": "sofia.rodriguez@example.org",
+    "fromName": "Sofia Rodriguez",
+    "subject": "Roth statement",
+    "body": "Hi, my mom said to send you my Roth statement. Attached!\nSofia",
+    "receivedAt": "2026-10-30T07:55:00-04:00",
+    "attachments": [
+      {
+        "docId": "D12",
+        "filename": "Q3 statement.pdf"
+      }
+    ]
+  },
+  {
+    "id": "E11",
+    "from": "mark.johnson@example.com",
+    "fromName": "Mark Johnson",
+    "subject": "fwd: statement",
+    "body": "See attached.\n\nMark",
+    "receivedAt": "2026-10-30T10:10:00-04:00",
+    "attachments": [
+      {
+        "docId": "D13",
+        "filename": "statement.pdf"
+      }
+    ]
+  },
+  {
+    "id": "E12",
+    "from": "kathleen.obrien@example.com",
+    "fromName": "Kathleen O'Brien",
+    "subject": "Vanguard statement",
+    "body": "Attached is my latest Vanguard statement.\n\nKathleen",
+    "receivedAt": "2026-10-30T12:31:00-04:00",
+    "attachments": [
+      {
+        "docId": "D14",
+        "filename": "Vanguard Q3.pdf"
+      }
+    ]
+  },
+  {
+    "id": "E13",
+    "from": "sean.obrien@example.com",
+    "fromName": "Sean O'Brien",
+    "subject": "rollover form",
+    "body": "Took a picture of the signed rollover form. Hope it's readable.\nSean",
+    "receivedAt": "2026-10-30T16:44:00-04:00",
+    "attachments": [
+      {
+        "docId": "D15",
+        "filename": "IMG_4410.pdf"
+      }
+    ]
+  },
+  {
+    "id": "E14",
+    "from": "thomas.nguyen@example.com",
+    "fromName": "Thomas Nguyen",
+    "subject": "1099 and Anna's statement",
+    "body": "Hi, attached is my 1099 and also Anna's Roth statement.\nThomas",
+    "receivedAt": "2026-10-31T09:02:00-04:00",
+    "attachments": [
+      {
+        "docId": "D16",
+        "filename": "1099.pdf"
+      },
+      {
+        "docId": "D17",
+        "filename": "Anna statement.pdf"
+      }
+    ]
+  },
+  {
+    "id": "E15",
+    "from": "anna.nguyen@example.com",
+    "fromName": "Anna Nguyen",
+    "subject": "Mom's new account paperwork",
+    "body": "Hi! Attached is the signed application for Thomas's mom, Le Nguyen. She's excited to get started.\nAnna",
+    "receivedAt": "2026-10-31T11:20:00-04:00",
+    "attachments": [
+      {
+        "docId": "D18",
+        "filename": "Mom new account.pdf"
+      }
+    ]
+  },
+  {
+    "id": "E16",
+    "from": "frontdesk@lakeside-cpa.example.org",
+    "fromName": "Lakeside CPA Group",
+    "subject": "1099 for Patel",
+    "body": "Hello, forwarding the 1099 for our mutual client Patel. Please confirm receipt.\n\nLakeside CPA Group",
+    "receivedAt": "2026-10-31T13:37:00-04:00",
+    "attachments": [
+      {
+        "docId": "D19",
+        "filename": "Patel 1099.pdf"
+      }
+    ]
+  },
+  {
+    "id": "E17",
+    "from": "g.halvorsen@example.net",
+    "fromName": "Greg H",
+    "subject": "please see attached",
+    "body": "please see attached statement thx",
+    "receivedAt": "2026-10-31T15:15:00-04:00",
+    "attachments": [
+      {
+        "docId": "D20",
+        "filename": "document.pdf"
+      }
+    ]
+  },
+  {
+    "id": "E18",
+    "from": "priya.patel@example.com",
+    "fromName": "Priya Patel",
+    "subject": "Q3",
+    "body": "Attached my Q3 Schwab statement as requested.\nPriya",
+    "receivedAt": "2026-11-01T08:48:00-04:00",
+    "attachments": [
+      {
+        "docId": "D21",
+        "filename": "Priya Q3.pdf"
+      }
+    ]
+  },
+  {
+    "id": "E19",
+    "from": "linda.smith@example.com",
+    "fromName": "Linda Smith",
+    "subject": "Missing Q2 Roth statement",
+    "body": "Found the Q2 statement for my Roth that was missing. Attached.\nLinda",
+    "receivedAt": "2026-11-01T10:26:00-04:00",
+    "attachments": [
+      {
+        "docId": "D22",
+        "filename": "Linda Roth Q2.pdf"
+      }
+    ]
+  },
+  {
+    "id": "E20",
+    "from": "david.chen@example.com",
+    "fromName": "David Chen",
+    "subject": "Life insurance",
+    "body": "Attached is the annual statement for my term life policy.\nDavid",
+    "receivedAt": "2026-11-01T12:09:00-04:00",
+    "attachments": [
+      {
+        "docId": "D23",
+        "filename": "Northwind policy.pdf"
+      }
+    ]
+  },
+  {
+    "id": "E21",
+    "from": "news@schwab-insights.example.com",
+    "fromName": "Market Insights Newsletter",
+    "subject": "Statement season: 5 tips for reviewing your accounts",
+    "body": "This week's newsletter: how to read your quarterly statement, year-end tax planning, and more.\n\nUnsubscribe | Manage preferences",
+    "receivedAt": "2026-11-01T06:00:00-04:00",
+    "attachments": []
+  },
+  {
+    "id": "E22",
+    "from": "kathleen.obrien@example.com",
+    "fromName": "Kathleen O'Brien",
+    "subject": "Can we move Thursday?",
+    "body": "Hi, something came up - could we move our review meeting to Friday at 2pm instead? Thanks!\nKathleen",
+    "receivedAt": "2026-11-01T14:40:00-04:00",
+    "attachments": []
+  },
+  {
+    "id": "E23",
+    "from": "billing@quick-pay-alerts.example.net",
+    "fromName": "Account Billing",
+    "subject": "URGENT: invoice attached - account suspension",
+    "body": "Your account will be suspended. Open the attached invoice and pay immediately.",
+    "receivedAt": "2026-11-01T17:02:00-04:00",
+    "attachments": [
+      {
+        "docId": "X01",
+        "filename": "invoice_8822.pdf"
+      }
+    ]
+  },
+  {
+    "id": "E24",
+    "from": "events@harborpoint-webinars.example.com",
+    "fromName": "Webinar Team",
+    "subject": "You're invited: 2027 Market Outlook",
+    "body": "Join us for our annual outlook webinar. Brochure attached.",
+    "receivedAt": "2026-11-02T07:30:00-04:00",
+    "attachments": [
+      {
+        "docId": "X02",
+        "filename": "2027 Outlook.pdf"
+      }
+    ]
+  },
+  {
+    "id": "E25",
+    "from": "sean.obrien@example.com",
+    "fromName": "Sean O'Brien",
+    "subject": "did you get it?",
+    "body": "Just checking you got the rollover form I sent the other day?\nSean",
+    "receivedAt": "2026-11-02T09:12:00-04:00",
+    "attachments": []
+  }
+]

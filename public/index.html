@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RIA Doc Inbox</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">HP</div>
+      <div>
+        <div class="brand-name">RIA Doc Inbox</div>
+        <div class="brand-sub">Harbor Point Wealth Partners</div>
+      </div>
+    </div>
+    <nav id="nav">
+      <a href="#dashboard" data-view="dashboard">Dashboard</a>
+      <a href="#inbox" data-view="inbox">Inbox <span class="count" id="c-inbox"></span></a>
+      <a href="#files" data-view="files">Sorted Files <span class="count" id="c-files"></span></a>
+      <a href="#review" data-view="review">Review Queue <span class="count warn" id="c-review"></span></a>
+      <a href="#activity" data-view="activity">Activity &amp; Digest</a>
+      <a href="#accuracy" data-view="accuracy">Accuracy Test</a>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="demo-badge">Demo data only. All clients are fictitious.</div>
+      <button class="link" id="lockBtn">Enter passcode</button>
+    </div>
+  </aside>
+
+  <main>
+    <header class="topbar">
+      <h1 id="viewTitle">Dashboard</h1>
+      <div class="topbar-right"><span id="modelTag" class="tag"></span><span id="lastSync" class="muted"></span></div>
+    </header>
+    <div id="toast" class="toast hidden"></div>
+
+    <!-- DASHBOARD -->
+    <section id="view-dashboard" class="view">
+      <div class="kpis">
+        <div class="kpi"><div class="kpi-label">Documents filed</div><div class="kpi-value" id="k-filed">0</div></div>
+        <div class="kpi"><div class="kpi-label">Needs review</div><div class="kpi-value warn" id="k-review">0</div></div>
+        <div class="kpi"><div class="kpi-label">Emails ignored</div><div class="kpi-value" id="k-ignored">0</div></div>
+        <div class="kpi"><div class="kpi-label">In queue</div><div class="kpi-value" id="k-queue">0</div></div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <h2>Run the automation</h2>
+          <p class="muted">Every 5 minutes, n8n checks the Gmail inbox, sends new emails here and runs the agents. You can also run it yourself.</p>
+          <div class="btns">
+            <button class="primary" id="runBtn">Run now</button>
+            <button id="seedBtn">Load demo inbox</button>
+            <button id="digestBtn">Generate digest</button>
+            <button class="danger" id="resetBtn">Reset</button>
+          </div>
+          <div id="progress" class="progress hidden">
+            <div class="bar"><div id="barFill"></div></div>
+            <div id="progressText" class="muted"></div>
+            <ol id="liveLog" class="live-log"></ol>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Latest ops digest</h2>
+          <div id="digestBox" class="muted">No digest yet. Run the automation.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>How it works</h2>
+        <div class="flow">
+          <div class="flow-step auto"><b>Automation (n8n)</b><span>Every 5 min: pull new Gmail emails + PDFs, send them here, run the agents, write the digest</span></div>
+          <div class="arrow">→</div>
+          <div class="flow-step agent"><b>1 · Intake Agent</b><span>Real client documents or junk? Who sent it?</span></div>
+          <div class="arrow">→</div>
+          <div class="flow-step agent"><b>2 · Classifier Agent</b><span>Reads the PDF (OCR for scans): type, custodian, date, last 4</span></div>
+          <div class="arrow">→</div>
+          <div class="flow-step agent"><b>3 · Filing Agent</b><span>Matches the client, names the file, creates folders, files it</span></div>
+          <div class="arrow">→</div>
+          <div class="flow-step human"><b>Human review</b><span>Anything below 80% confidence waits for approval</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- INBOX -->
+    <section id="view-inbox" class="view hidden">
+      <div class="card flush">
+        <table class="table" id="inboxTable">
+          <thead><tr><th>Received</th><th>From</th><th>Subject</th><th>Files</th><th>Status</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="empty hidden" id="inboxEmpty">The inbox is empty. Go to the Dashboard and click <b>Load demo inbox</b>, or send an email to the demo Gmail.</div>
+      </div>
+    </section>
+
+    <!-- FILES -->
+    <section id="view-files" class="view hidden">
+      <div class="files-layout">
+        <div class="card tree" id="tree"></div>
+        <div class="card preview" id="preview"><div class="muted">Select a document to preview it.</div></div>
+      </div>
+    </section>
+
+    <!-- REVIEW -->
+    <section id="view-review" class="view hidden">
+      <p class="muted intro">These documents were <b>not</b> filed automatically because an agent was not confident enough. Nothing gets filed here until a person approves it.</p>
+      <div id="reviewList"></div>
+    </section>
+
+    <!-- ACTIVITY -->
+    <section id="view-activity" class="view hidden">
+      <div class="grid2">
+        <div class="card"><h2>Activity log</h2><ol id="activityLog" class="log"></ol></div>
+        <div class="card"><h2>Digest history</h2><div id="digestHistory"></div></div>
+      </div>
+    </section>
+
+    <!-- ACCURACY -->
+    <section id="view-accuracy" class="view hidden">
+      <div class="card">
+        <h2>Accuracy against the answer key</h2>
+        <p class="muted">Compares what the agents did with the correct answer for each demo document. Load the demo inbox and run the automation first.</p>
+        <div id="evalHeadline" class="headline"></div>
+        <div class="kpis" id="evalKpis"></div>
+      </div>
+      <div class="card flush">
+        <table class="table" id="evalTable">
+          <thead><tr><th>Doc</th><th>Result</th><th>Expected</th><th>Actual</th><th>Notes</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <div id="drawer" class="drawer hidden">
+    <div class="drawer-panel">
+      <button class="close" id="drawerClose">×</button>
+      <div id="drawerBody"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

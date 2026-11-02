@@ -1,0 +1,9 @@
+# Netlify settings (read automatically when you connect the repo).
+[build]
+  command = "npm run build"
+  publish = "public"
+
+[functions]
+  node_bundler = "esbuild"
+  # Lets the backend read the demo PDFs and JSON when you press "Load demo inbox".
+  included_files = ["seed/data/**"]

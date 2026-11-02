@@ -1,0 +1,305 @@
+[
+  {
+    "id": "HH-SMITH",
+    "name": "Smith Household",
+    "status": "existing",
+    "address": "14 Elm Row, Hartford, CT 06103",
+    "members": [
+      {
+        "id": "P-JSMITH",
+        "first": "John",
+        "last": "Smith",
+        "email": "john.smith@example.com",
+        "role": "primary",
+        "accounts": [
+          {
+            "custodian": "Schwab",
+            "type": "Individual Brokerage",
+            "last4": "4417"
+          },
+          {
+            "custodian": "Fidelity",
+            "type": "Rollover IRA",
+            "last4": "2290"
+          }
+        ]
+      },
+      {
+        "id": "P-LSMITH",
+        "first": "Linda",
+        "last": "Smith",
+        "email": "linda.smith@example.com",
+        "role": "spouse",
+        "accounts": [
+          {
+            "custodian": "Fidelity",
+            "type": "Individual Brokerage",
+            "last4": "8803"
+          },
+          {
+            "custodian": "Schwab",
+            "type": "Roth IRA",
+            "last4": "5126"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "HH-CHEN",
+    "name": "Chen Household",
+    "status": "existing",
+    "address": "220 Bayview Ave, Providence, RI 02903",
+    "members": [
+      {
+        "id": "P-DCHEN",
+        "first": "David",
+        "last": "Chen",
+        "email": "david.chen@example.com",
+        "role": "primary",
+        "accounts": [
+          {
+            "custodian": "Schwab",
+            "type": "Individual Brokerage",
+            "last4": "6034"
+          },
+          {
+            "custodian": "Vanguard",
+            "type": "Traditional IRA",
+            "last4": "1178"
+          }
+        ]
+      },
+      {
+        "id": "P-MCHEN",
+        "first": "Mary",
+        "last": "Chen",
+        "email": "mary.chen@example.com",
+        "role": "spouse",
+        "accounts": [
+          {
+            "custodian": "Schwab",
+            "type": "Roth IRA",
+            "last4": "3391"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "HH-PATEL-R",
+    "name": "Raj & Priya Patel Household",
+    "status": "new",
+    "address": "9 Orchard Ln, Edison, NJ 08817",
+    "members": [
+      {
+        "id": "P-RPATEL",
+        "first": "Raj",
+        "last": "Patel",
+        "email": "raj.patel@example.com",
+        "role": "primary",
+        "accounts": [
+          {
+            "custodian": "Schwab",
+            "type": "Joint Brokerage",
+            "last4": "7702"
+          }
+        ]
+      },
+      {
+        "id": "P-PPATEL",
+        "first": "Priya",
+        "last": "Patel",
+        "email": "priya.patel@example.com",
+        "role": "spouse",
+        "accounts": [
+          {
+            "custodian": "Schwab",
+            "type": "Individual Brokerage",
+            "last4": "9415"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "HH-PATEL-A",
+    "name": "Anil Patel Household",
+    "status": "new",
+    "address": "301 Grove St, Jersey City, NJ 07302",
+    "members": [
+      {
+        "id": "P-APATEL",
+        "first": "Anil",
+        "last": "Patel",
+        "email": "anil.patel@example.net",
+        "role": "primary",
+        "accounts": [
+          {
+            "custodian": "Schwab",
+            "type": "Individual Brokerage",
+            "last4": "2048"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "HH-RODRIGUEZ",
+    "name": "Rodriguez Household",
+    "status": "existing",
+    "address": "77 Mission Rd, Worcester, MA 01602",
+    "members": [
+      {
+        "id": "P-CRODRIGUEZ",
+        "first": "Carlos",
+        "last": "Rodriguez",
+        "email": "carlos.rodriguez@example.com",
+        "role": "primary",
+        "accounts": [
+          {
+            "custodian": "Fidelity",
+            "type": "Individual Brokerage",
+            "last4": "5561"
+          }
+        ]
+      },
+      {
+        "id": "P-ERODRIGUEZ",
+        "first": "Elena",
+        "last": "Rodriguez",
+        "email": "elena.rodriguez@example.com",
+        "role": "spouse",
+        "accounts": [
+          {
+            "custodian": "Fidelity",
+            "type": "Traditional IRA",
+            "last4": "6620"
+          }
+        ]
+      },
+      {
+        "id": "P-SRODRIGUEZ",
+        "first": "Sofia",
+        "last": "Rodriguez",
+        "email": "sofia.rodriguez@example.org",
+        "role": "adult child",
+        "accounts": [
+          {
+            "custodian": "Schwab",
+            "type": "Roth IRA",
+            "last4": "0937"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "HH-JOHNSON",
+    "name": "Johnson Household",
+    "status": "existing",
+    "address": "5 Quarry Hill, Burlington, VT 05401",
+    "members": [
+      {
+        "id": "P-MJOHNSON",
+        "first": "Mark",
+        "last": "Johnson",
+        "email": "mark.johnson@example.com",
+        "role": "primary",
+        "accounts": [
+          {
+            "custodian": "Fidelity",
+            "type": "Individual Brokerage",
+            "last4": "7731"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "HH-OBRIEN",
+    "name": "O'Brien Household",
+    "status": "existing",
+    "address": "18 Harbor St, Portland, ME 04101",
+    "members": [
+      {
+        "id": "P-KOBRIEN",
+        "first": "Kathleen",
+        "last": "O'Brien",
+        "email": "kathleen.obrien@example.com",
+        "role": "primary",
+        "accounts": [
+          {
+            "custodian": "Vanguard",
+            "type": "Individual Brokerage",
+            "last4": "4482"
+          }
+        ]
+      },
+      {
+        "id": "P-SOBRIEN",
+        "first": "Sean",
+        "last": "O'Brien",
+        "email": "sean.obrien@example.com",
+        "role": "spouse",
+        "accounts": [
+          {
+            "custodian": "Schwab",
+            "type": "Rollover IRA",
+            "last4": "1609"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "HH-NGUYEN",
+    "name": "Nguyen Household",
+    "status": "existing",
+    "address": "402 Lake Shore Dr, Nashua, NH 03060",
+    "members": [
+      {
+        "id": "P-TNGUYEN",
+        "first": "Thomas",
+        "last": "Nguyen",
+        "email": "thomas.nguyen@example.com",
+        "role": "primary",
+        "accounts": [
+          {
+            "custodian": "Schwab",
+            "type": "Individual Brokerage",
+            "last4": "8157"
+          }
+        ]
+      },
+      {
+        "id": "P-ANGUYEN",
+        "first": "Anna",
+        "last": "Nguyen",
+        "email": "anna.nguyen@example.com",
+        "role": "spouse",
+        "accounts": [
+          {
+            "custodian": "Schwab",
+            "type": "Roth IRA",
+            "last4": "2764"
+          }
+        ]
+      },
+      {
+        "id": "P-LNGUYEN",
+        "first": "Le",
+        "last": "Nguyen",
+        "email": "",
+        "role": "parent (new client)",
+        "accounts": [
+          {
+            "custodian": "Schwab",
+            "type": "Individual Brokerage",
+            "last4": "3350"
+          }
+        ]
+      }
+    ]
+  }
+]

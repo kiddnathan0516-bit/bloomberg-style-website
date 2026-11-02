@@ -1,0 +1,406 @@
+{
+  "generated": "2026-11-02T00:00:00",
+  "emails": {
+    "E01": {
+      "expected": "process",
+      "note": ""
+    },
+    "E02": {
+      "expected": "process",
+      "note": ""
+    },
+    "E03": {
+      "expected": "process",
+      "note": "Spouse emailing about the other spouse's account"
+    },
+    "E04": {
+      "expected": "process",
+      "note": ""
+    },
+    "E05": {
+      "expected": "process",
+      "note": ""
+    },
+    "E06": {
+      "expected": "process",
+      "note": ""
+    },
+    "E07": {
+      "expected": "process",
+      "note": "Unknown address + misspelled client name"
+    },
+    "E08": {
+      "expected": "process",
+      "note": ""
+    },
+    "E09": {
+      "expected": "process",
+      "note": ""
+    },
+    "E10": {
+      "expected": "process",
+      "note": ""
+    },
+    "E11": {
+      "expected": "process",
+      "note": ""
+    },
+    "E12": {
+      "expected": "process",
+      "note": ""
+    },
+    "E13": {
+      "expected": "process",
+      "note": ""
+    },
+    "E14": {
+      "expected": "process",
+      "note": ""
+    },
+    "E15": {
+      "expected": "process",
+      "note": ""
+    },
+    "E16": {
+      "expected": "review",
+      "note": "Third party; two Patel households; doc says only 'R. PATEL'"
+    },
+    "E17": {
+      "expected": "review",
+      "note": "Sender is not a client"
+    },
+    "E18": {
+      "expected": "process",
+      "note": ""
+    },
+    "E19": {
+      "expected": "process",
+      "note": ""
+    },
+    "E20": {
+      "expected": "process",
+      "note": ""
+    },
+    "E21": {
+      "expected": "ignore",
+      "note": "Newsletter - contains 'statement' keyword"
+    },
+    "E22": {
+      "expected": "ignore",
+      "note": "Known client but scheduling only"
+    },
+    "E23": {
+      "expected": "ignore",
+      "note": "Spam/phishing with a PDF attachment"
+    },
+    "E24": {
+      "expected": "ignore",
+      "note": "Marketing with attachment"
+    },
+    "E25": {
+      "expected": "ignore",
+      "note": "Follow-up only, no document"
+    }
+  },
+  "documents": {
+    "D01": {
+      "doc_id": "D01",
+      "attachment_filename": "Statement_Q3.pdf",
+      "expected_outcome": "file",
+      "household_id": "HH-SMITH",
+      "person_id": "P-JSMITH",
+      "doc_type": "Statement",
+      "source": "Schwab",
+      "date": "2026-09",
+      "expected_filename": "2026-09_Smith-John_Schwab_Statement.pdf",
+      "expected_folder": "HH-SMITH/P-JSMITH/Statements",
+      "note": ""
+    },
+    "D02": {
+      "doc_id": "D02",
+      "attachment_filename": "1099 2025.pdf",
+      "expected_outcome": "file",
+      "household_id": "HH-SMITH",
+      "person_id": "P-LSMITH",
+      "doc_type": "1099",
+      "source": "Fidelity",
+      "date": "2025-12",
+      "expected_filename": "2025-12_Smith-Linda_Fidelity_1099.pdf",
+      "expected_folder": "HH-SMITH/P-LSMITH/Tax Documents",
+      "note": ""
+    },
+    "D03": {
+      "doc_id": "D03",
+      "attachment_filename": "rollover paperwork.pdf",
+      "expected_outcome": "file",
+      "household_id": "HH-CHEN",
+      "person_id": "P-DCHEN",
+      "doc_type": "Rollover",
+      "source": "Vanguard",
+      "date": "2026-10",
+      "expected_filename": "2026-10_Chen-David_Vanguard_Rollover.pdf",
+      "expected_folder": "HH-CHEN/P-DCHEN/Rollovers & Transfers",
+      "note": "Spouse (Mary) emailed David's rollover form"
+    },
+    "D04": {
+      "doc_id": "D04",
+      "attachment_filename": "schwab_stmt.pdf",
+      "expected_outcome": "file",
+      "household_id": "HH-CHEN",
+      "person_id": "P-DCHEN",
+      "doc_type": "Statement",
+      "source": "Schwab",
+      "date": "2026-09",
+      "expected_filename": "2026-09_Chen-David_Schwab_Statement.pdf",
+      "expected_folder": "HH-CHEN/P-DCHEN/Statements",
+      "note": ""
+    },
+    "D05": {
+      "doc_id": "D05",
+      "attachment_filename": "vanguard tax form.pdf",
+      "expected_outcome": "file",
+      "household_id": "HH-CHEN",
+      "person_id": "P-DCHEN",
+      "doc_type": "1099",
+      "source": "Vanguard",
+      "date": "2025-12",
+      "expected_filename": "2025-12_Chen-David_Vanguard_1099.pdf",
+      "expected_folder": "HH-CHEN/P-DCHEN/Tax Documents",
+      "note": ""
+    },
+    "D06": {
+      "doc_id": "D06",
+      "attachment_filename": "risk_questionnaire_signed.pdf",
+      "expected_outcome": "file",
+      "household_id": "HH-PATEL-R",
+      "person_id": "P-RPATEL",
+      "doc_type": "RiskQ",
+      "source": "HarborPoint",
+      "date": "2026-10",
+      "expected_filename": "2026-10_Patel-Raj_HarborPoint_RiskQ.pdf",
+      "expected_folder": "HH-PATEL-R/P-RPATEL/Risk Questionnaires",
+      "note": "New client onboarding form"
+    },
+    "D07": {
+      "doc_id": "D07",
+      "attachment_filename": "Schwab application.pdf",
+      "expected_outcome": "file",
+      "household_id": "HH-PATEL-A",
+      "person_id": "P-APATEL",
+      "doc_type": "AcctApp",
+      "source": "Schwab",
+      "date": "2026-10",
+      "expected_filename": "2026-10_Patel-Anil_Schwab_AcctApp.pdf",
+      "expected_folder": "HH-PATEL-A/P-APATEL/Account Applications",
+      "note": "Different Patel household - sender email disambiguates"
+    },
+    "D08": {
+      "doc_id": "D08",
+      "attachment_filename": "fidelity statement.pdf",
+      "expected_outcome": "file",
+      "household_id": "HH-SMITH",
+      "person_id": "P-JSMITH",
+      "doc_type": "Statement",
+      "source": "Fidelity",
+      "date": "2026-09",
+      "expected_filename": "2026-09_Smith-John_Fidelity_Statement.pdf",
+      "expected_folder": "HH-SMITH/P-JSMITH/Statements",
+      "note": "Sent from personal address with misspelled name 'Jon Smyth'"
+    },
+    "D09": {
+      "doc_id": "D09",
+      "attachment_filename": "scan0001.pdf",
+      "expected_outcome": "file",
+      "household_id": "HH-RODRIGUEZ",
+      "person_id": "P-CRODRIGUEZ",
+      "doc_type": "ID",
+      "source": "DMV",
+      "date": "2024-03",
+      "expected_filename": "2024-03_Rodriguez-Carlos_DMV_ID.pdf",
+      "expected_folder": "HH-RODRIGUEZ/P-CRODRIGUEZ/Identification",
+      "note": "Scanned driver's license, image only"
+    },
+    "D10": {
+      "doc_id": "D10",
+      "attachment_filename": "Beneficiary form.pdf",
+      "expected_outcome": "file",
+      "household_id": "HH-RODRIGUEZ",
+      "person_id": "P-ERODRIGUEZ",
+      "doc_type": "Beneficiary",
+      "source": "Fidelity",
+      "date": "2026-10",
+      "expected_filename": "2026-10_Rodriguez-Elena_Fidelity_Beneficiary.pdf",
+      "expected_folder": "HH-RODRIGUEZ/P-ERODRIGUEZ/Beneficiary Forms",
+      "note": ""
+    },
+    "D11": {
+      "doc_id": "D11",
+      "attachment_filename": "life policy annual statement.pdf",
+      "expected_outcome": "file",
+      "household_id": "HH-RODRIGUEZ",
+      "person_id": "P-ERODRIGUEZ",
+      "doc_type": "Insurance",
+      "source": "NorthwindLife",
+      "date": "2026-09",
+      "expected_filename": "2026-09_Rodriguez-Elena_NorthwindLife_Insurance.pdf",
+      "expected_folder": "HH-RODRIGUEZ/P-ERODRIGUEZ/Insurance",
+      "note": ""
+    },
+    "D12": {
+      "doc_id": "D12",
+      "attachment_filename": "Q3 statement.pdf",
+      "expected_outcome": "file",
+      "household_id": "HH-RODRIGUEZ",
+      "person_id": "P-SRODRIGUEZ",
+      "doc_type": "Statement",
+      "source": "Schwab",
+      "date": "2026-09",
+      "expected_filename": "2026-09_Rodriguez-Sofia_Schwab_Statement.pdf",
+      "expected_folder": "HH-RODRIGUEZ/P-SRODRIGUEZ/Statements",
+      "note": ""
+    },
+    "D13": {
+      "doc_id": "D13",
+      "attachment_filename": "statement.pdf",
+      "expected_outcome": "file",
+      "household_id": "HH-JOHNSON",
+      "person_id": "P-MJOHNSON",
+      "doc_type": "Statement",
+      "source": "Fidelity",
+      "date": "2026-09",
+      "expected_filename": "2026-09_Johnson-Mark_Fidelity_Statement.pdf",
+      "expected_folder": "HH-JOHNSON/P-MJOHNSON/Statements",
+      "note": "No name on document - only the account number identifies the client"
+    },
+    "D14": {
+      "doc_id": "D14",
+      "attachment_filename": "Vanguard Q3.pdf",
+      "expected_outcome": "file",
+      "household_id": "HH-OBRIEN",
+      "person_id": "P-KOBRIEN",
+      "doc_type": "Statement",
+      "source": "Vanguard",
+      "date": "2026-09",
+      "expected_filename": "2026-09_OBrien-Kathleen_Vanguard_Statement.pdf",
+      "expected_folder": "HH-OBRIEN/P-KOBRIEN/Statements",
+      "note": "Apostrophe in last name -> OBrien"
+    },
+    "D15": {
+      "doc_id": "D15",
+      "attachment_filename": "IMG_4410.pdf",
+      "expected_outcome": "file",
+      "household_id": "HH-OBRIEN",
+      "person_id": "P-SOBRIEN",
+      "doc_type": "Rollover",
+      "source": "Schwab",
+      "date": "2026-10",
+      "expected_filename": "2026-10_OBrien-Sean_Schwab_Rollover.pdf",
+      "expected_folder": "HH-OBRIEN/P-SOBRIEN/Rollovers & Transfers",
+      "note": "Scanned rollover form, image only"
+    },
+    "D16": {
+      "doc_id": "D16",
+      "attachment_filename": "1099.pdf",
+      "expected_outcome": "file",
+      "household_id": "HH-NGUYEN",
+      "person_id": "P-TNGUYEN",
+      "doc_type": "1099",
+      "source": "Schwab",
+      "date": "2025-12",
+      "expected_filename": "2025-12_Nguyen-Thomas_Schwab_1099.pdf",
+      "expected_folder": "HH-NGUYEN/P-TNGUYEN/Tax Documents",
+      "note": ""
+    },
+    "D17": {
+      "doc_id": "D17",
+      "attachment_filename": "Anna statement.pdf",
+      "expected_outcome": "file",
+      "household_id": "HH-NGUYEN",
+      "person_id": "P-ANGUYEN",
+      "doc_type": "Statement",
+      "source": "Schwab",
+      "date": "2026-09",
+      "expected_filename": "2026-09_Nguyen-Anna_Schwab_Statement.pdf",
+      "expected_folder": "HH-NGUYEN/P-ANGUYEN/Statements",
+      "note": "Husband emailed wife's statement"
+    },
+    "D18": {
+      "doc_id": "D18",
+      "attachment_filename": "Mom new account.pdf",
+      "expected_outcome": "file",
+      "household_id": "HH-NGUYEN",
+      "person_id": "P-LNGUYEN",
+      "doc_type": "AcctApp",
+      "source": "Schwab",
+      "date": "2026-10",
+      "expected_filename": "2026-10_Nguyen-Le_Schwab_AcctApp.pdf",
+      "expected_folder": "HH-NGUYEN/P-LNGUYEN/Account Applications",
+      "note": "Daughter-in-law emailed the parent's (new client) paperwork"
+    },
+    "D19": {
+      "doc_id": "D19",
+      "attachment_filename": "Patel 1099.pdf",
+      "expected_outcome": "review",
+      "household_id": "HH-PATEL-R",
+      "person_id": "P-RPATEL",
+      "doc_type": "1099",
+      "source": "Schwab",
+      "date": "2025-12",
+      "expected_filename": "2025-12_Patel-Raj_Schwab_1099.pdf",
+      "expected_folder": "HH-PATEL-R/P-RPATEL/Tax Documents",
+      "note": "Unknown sender (CPA) and doc only says 'R. PATEL' - ambiguous; should go to review"
+    },
+    "D20": {
+      "doc_id": "D20",
+      "attachment_filename": "document.pdf",
+      "expected_outcome": "review",
+      "household_id": null,
+      "person_id": null,
+      "doc_type": "Statement",
+      "source": "Schwab",
+      "date": "2026-09",
+      "expected_filename": null,
+      "expected_folder": null,
+      "note": "Unknown sender, person not a client - should go to review"
+    },
+    "D21": {
+      "doc_id": "D21",
+      "attachment_filename": "Priya Q3.pdf",
+      "expected_outcome": "file",
+      "household_id": "HH-PATEL-R",
+      "person_id": "P-PPATEL",
+      "doc_type": "Statement",
+      "source": "Schwab",
+      "date": "2026-09",
+      "expected_filename": "2026-09_Patel-Priya_Schwab_Statement.pdf",
+      "expected_folder": "HH-PATEL-R/P-PPATEL/Statements",
+      "note": ""
+    },
+    "D22": {
+      "doc_id": "D22",
+      "attachment_filename": "Linda Roth Q2.pdf",
+      "expected_outcome": "file",
+      "household_id": "HH-SMITH",
+      "person_id": "P-LSMITH",
+      "doc_type": "Statement",
+      "source": "Schwab",
+      "date": "2026-06",
+      "expected_filename": "2026-06_Smith-Linda_Schwab_Statement.pdf",
+      "expected_folder": "HH-SMITH/P-LSMITH/Statements",
+      "note": ""
+    },
+    "D23": {
+      "doc_id": "D23",
+      "attachment_filename": "Northwind policy.pdf",
+      "expected_outcome": "file",
+      "household_id": "HH-CHEN",
+      "person_id": "P-DCHEN",
+      "doc_type": "Insurance",
+      "source": "NorthwindLife",
+      "date": "2026-09",
+      "expected_filename": "2026-09_Chen-David_NorthwindLife_Insurance.pdf",
+      "expected_folder": "HH-CHEN/P-DCHEN/Insurance",
+      "note": ""
+    }
+  }
+}
