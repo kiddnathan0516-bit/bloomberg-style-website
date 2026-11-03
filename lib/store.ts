@@ -69,19 +69,16 @@ class BlobKV implements KV {
   }
 }
 
-let kv: KV | null = null;
+let localKv: LocalKV | null = null;
 export function store(): KV {
-  if (kv) return kv;
-  if (process.env.LOCAL_STORE_DIR) {
-    kv = new LocalKV(process.env.LOCAL_STORE_DIR);
-  } else {
-    try {
-      kv = new BlobKV();
-    } catch {
-      kv = new LocalKV(path.resolve(".data"));
-    }
+  if (process.env.LOCAL_STORE_DIR) return (localKv ??= new LocalKV(process.env.LOCAL_STORE_DIR));
+  // On Netlify, open the store on every call: each request brings a fresh, short-lived
+  // access token, so a store kept from an earlier request fails with "Token expired".
+  try {
+    return new BlobKV();
+  } catch {
+    return (localKv ??= new LocalKV(path.resolve(".data")));
   }
-  return kv;
 }
 
 const emptyState = (): AppState => ({ emails: {}, docs: {}, folders: [], log: [], digests: [] });
