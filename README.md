@@ -37,6 +37,9 @@ order, until it records a decision. The code runs the tools and enforces the rul
 **Domain customization:** `lib/policy.ts` holds the firm's document taxonomy, naming convention, folder
 rules, privacy rules, ambiguity rules and worked examples. Every agent's system prompt starts with it.
 
+**Parallel processing:** the website runs 5 agents at once. Each email and document is its own storage
+record and each worker owns a fixed share of the emails, so parallel work never overwrites itself.
+
 **Guardrails enforced in code (the AI can't skip them):** `lib/guardrails.ts`
 - Confidence below 0.80 can never auto-file. It always goes to the Review Queue.
 - Only the last 4 digits of any account number are ever stored or shown.
@@ -83,7 +86,8 @@ Don't commit your edited workflow back to GitHub. It contains your secret.
 
 ### One-click live demo (website button)
 
-The **Run live demo** button on the Dashboard runs the whole system:
+The **Run demo** button on the Dashboard runs the whole system (the list of demo emails is
+`seed/data/demo-emails.json`, published as `/demo-emails.json`; 22 documents across all households):
 website → n8n emails 6 test documents through Gmail → n8n reads them back from Gmail → the agents
 process them → digest. Setup:
 

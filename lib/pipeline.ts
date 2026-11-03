@@ -114,11 +114,21 @@ const CLAIM_MS = 90_000;
  * Pick the next item and "claim" it for 90 seconds, so two callers running at the same
  * time (the n8n automation and the Run-now button) never process the same item twice.
  */
-async function claimNext(): Promise<{ kind: "email" | "classify" | "file"; id: string } | null> {
+/** Which parallel worker owns an email: worker `w` of `of` handles a fixed share of emails. */
+export interface Share { w: number; of: number }
+const ALL: Share = { w: 0, of: 1 };
+const owner = (emailId: string, of: number) => [...emailId].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % of;
+const mine = (emailId: string, share: Share) => share.of <= 1 || owner(emailId, share.of) === share.w;
+
+/**
+ * Pick the next item in this worker's share and "claim" it for 90 seconds, so that if
+ * another caller (e.g. the n8n automation) runs at the same time it skips this item.
+ */
+async function claimNext(share: Share): Promise<{ kind: "email" | "classify" | "file"; id: string } | null> {
   let picked: { kind: "email" | "classify" | "file"; id: string } | null = null;
   await updateState((s) => {
-    const email = Object.values(s.emails).filter((e) => e.status === "queued" && free(e)).sort(byId)[0];
-    const docs = Object.values(s.docs).filter(free).sort(byId);
+    const email = Object.values(s.emails).filter((e) => e.status === "queued" && free(e) && mine(e.id, share)).sort(byId)[0];
+    const docs = Object.values(s.docs).filter((d) => free(d) && mine(d.emailId, share)).sort(byId);
     const classify = docs.find((d) => d.status === "to_classify");
     const file = docs.find((d) => d.status === "to_file");
     const rec = email ?? classify ?? file;
@@ -129,15 +139,22 @@ async function claimNext(): Promise<{ kind: "email" | "classify" | "file"; id: s
   return picked;
 }
 
-export async function workOnce(): Promise<{ did: string; remaining: number }> {
+function pendingInShare(s: AppState, share: Share) {
+  const emails = Object.values(s.emails).filter((e) => e.status === "queued" && mine(e.id, share)).length;
+  const docs = Object.values(s.docs).filter((d) => (d.status === "to_classify" || d.status === "to_file") && mine(d.emailId, share)).length;
+  return emails + docs;
+}
+
+export async function workOnce(share: Share = ALL): Promise<{ did: string; remaining: number }> {
   if (!llmReady()) {
     const remaining = pendingCounts(await loadState()).total;
     return { did: "error: ANTHROPIC_API_KEY is not set. Add it in Netlify > Site configuration > Environment variables, then redeploy.", remaining };
   }
-  const next = await claimNext();
+  const next = await claimNext(share);
   if (!next) {
-    const busy = pendingCounts(await loadState()).total;
-    return { did: busy ? "waiting for items another worker is processing" : "idle", remaining: busy };
+    const s = await loadState();
+    const busy = pendingInShare(s, share);
+    return { did: busy ? "waiting for items another worker is processing" : "idle", remaining: pendingCounts(s).total };
   }
   const s = await loadState();
   let did: string;
@@ -169,6 +186,7 @@ async function doIntake(email: EmailRecord) {
     const { result, trace } = await runIntakeAgent(email);
     await updateState((s) => {
       const e = s.emails[email.id];
+      if (!e || e.status !== "queued") return; // another worker already handled it
       e.claimedUntil = undefined;
       e.intake = result;
       e.trace.push(...trace);
@@ -203,6 +221,7 @@ async function doClassify(doc: DocRecord, s: AppState) {
     const { classification, trace } = await runClassifierAgent(doc, s.emails[doc.emailId], bytes);
     await updateState((st) => {
       const d = st.docs[doc.id];
+      if (!d || d.status !== "to_classify") return; // another worker already handled it
       d.claimedUntil = undefined;
       d.classification = classification;
       d.trace.push(...trace);
@@ -221,6 +240,7 @@ async function doFile(doc: DocRecord, s: AppState) {
     const r = await runFilingAgent(doc, s.emails[doc.emailId], doc.classification!, s);
     await updateState((st) => {
       const d = st.docs[doc.id];
+      if (!d || d.status !== "to_file") return; // another worker already handled it: never file twice
       d.claimedUntil = undefined;
       d.trace.push(...r.trace);
       d.updatedAt = now();

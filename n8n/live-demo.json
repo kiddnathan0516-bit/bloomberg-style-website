@@ -20,7 +20,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Runs when you click \"Run live demo\" on the website.\n// >>> EDIT THESE THREE LINES (the only settings in this workflow) <<<\nconst SITE_URL = 'https://YOUR-SITE.netlify.app';\nconst DEMO_GMAIL = 'your-demo-inbox@gmail.com';\nconst INTAKE_SECRET = 'PASTE-YOUR-INTAKE_SECRET-HERE';\n\nconst req = $('Website button').first().json;\nif ((req.headers || {})['x-intake-secret'] !== INTAKE_SECRET) throw new Error('Wrong or missing secret: check INTAKE_SECRET here and in Netlify.');\nconst startedAt = Number(req.body?.startedAt) || Math.floor(Date.now() / 1000);\n\n// Each email tests a different situation. Add or remove rows as you like.\nconst EMAILS = [\n  { pdf: 'D24', file: 'Fidelity Q3 2026 statement.pdf', subject: 'Q3 statement',\n    body: 'Hi team,\\n\\nAttached is my Fidelity statement for the third quarter.\\n\\nThanks,\\nCarlos Rodriguez' },\n  { pdf: 'D25', file: 'Smith personal balance sheet.pdf', subject: 'Our balance sheet for the planning meeting',\n    body: 'Hi,\\n\\nAhead of our planning meeting, attached is our updated personal balance sheet.\\n\\nBest,\\nLinda Smith' },\n  { pdf: 'D27', file: 'Northwind annual policy report.pdf', subject: 'Life insurance annual report',\n    body: 'Hello,\\n\\nNorthwind sent my annual policy report. Attached for your files.\\n\\nThomas Nguyen' },\n  { pdf: 'D28', file: 'OBrien Trust certification.pdf', subject: 'Trust certification',\n    body: 'Hi,\\n\\nOur attorney prepared the certification of trust you asked for so we can retitle the accounts. Attached.\\n\\nKathleen O\\'Brien' },\n  { pdf: 'D29', file: 'Pension statement 2026.pdf', subject: 'Pension statement',\n    body: 'Attached is my pension statement from work.\\n\\nMark Johnson' },\n  { pdf: 'D30', file: 'Harbor Point new client profile - signed.pdf', subject: 'Signed new client profile',\n    body: 'Hello,\\n\\nPlease find my completed and signed new client profile attached. Looking forward to working together.\\n\\nAnil Patel' },\n  { pdf: 'X01', file: 'invoice_8822.pdf', subject: 'URGENT: invoice attached - account suspension',\n    body: 'Your account will be suspended. Open the attached invoice and pay immediately.' },\n];\n\nconst out = [];\nfor (const e of EMAILS) {\n  const pdf = await this.helpers.httpRequest({\n    method: 'GET', url: `${SITE_URL}/demo-pdfs/${e.pdf}.pdf`, encoding: 'arraybuffer', timeout: 30000,\n  });\n  const binary = await this.helpers.prepareBinaryData(Buffer.from(pdf), e.file, 'application/pdf');\n  out.push({ json: { to: DEMO_GMAIL, subject: e.subject, body: e.body, startedAt: startedAt - 60, siteUrl: SITE_URL, secret: INTAKE_SECRET }, binary: { data: binary } });\n}\nreturn out;"
+        "jsCode": "// Runs when you click \"Run live demo\" on the website.\n// >>> EDIT THESE THREE LINES (the only settings in this workflow) <<<\nconst SITE_URL = 'https://YOUR-SITE.netlify.app';\nconst DEMO_GMAIL = 'your-demo-inbox@gmail.com';\nconst INTAKE_SECRET = 'PASTE-YOUR-INTAKE_SECRET-HERE';\n\nconst req = $('Website button').first().json;\nif ((req.headers || {})['x-intake-secret'] !== INTAKE_SECRET) throw new Error('Wrong or missing secret: check INTAKE_SECRET here and in Netlify.');\nconst startedAt = Number(req.body?.startedAt) || Math.floor(Date.now() / 1000);\n\n// The list of demo emails lives on the website (demo-emails.json), so it can change without editing n8n.\nconst EMAILS = await this.helpers.httpRequest({ method: 'GET', url: `${SITE_URL}/demo-emails.json`, json: true, timeout: 30000 });\n\nconst out = [];\nfor (const e of EMAILS) {\n  const pdf = await this.helpers.httpRequest({\n    method: 'GET', url: `${SITE_URL}/demo-pdfs/${e.pdf}.pdf`, encoding: 'arraybuffer', timeout: 30000,\n  });\n  const binary = await this.helpers.prepareBinaryData(Buffer.from(pdf), e.file, 'application/pdf');\n  out.push({ json: { to: DEMO_GMAIL, subject: e.subject, body: e.body, startedAt: startedAt - 60, siteUrl: SITE_URL, secret: INTAKE_SECRET }, binary: { data: binary } });\n}\nreturn out;"
       },
       "id": "c3f2e8b1-0002-4c1e-9a10-000000000002",
       "name": "Build emails + download fake PDFs",
@@ -61,11 +61,11 @@
     {
       "parameters": {
         "resume": "timeInterval",
-        "amount": 30,
+        "amount": 20,
         "unit": "seconds"
       },
       "id": "c3f2e8b1-0004-4c1e-9a10-000000000004",
-      "name": "Wait 30 sec for Gmail",
+      "name": "Wait 20 sec for Gmail",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
@@ -78,7 +78,7 @@
       "parameters": {
         "operation": "getAll",
         "returnAll": false,
-        "limit": 20,
+        "limit": 50,
         "simple": false,
         "filters": {
           "q": "=in:inbox after:{{ $('Build emails + download fake PDFs').first().json.startedAt }}"
@@ -138,14 +138,14 @@
       "main": [
         [
           {
-            "node": "Wait 30 sec for Gmail",
+            "node": "Wait 20 sec for Gmail",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Wait 30 sec for Gmail": {
+    "Wait 20 sec for Gmail": {
       "main": [
         [
           {

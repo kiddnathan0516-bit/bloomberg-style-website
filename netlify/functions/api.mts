@@ -14,6 +14,7 @@ import {
 import { evaluate } from "../../lib/evaluate.js";
 import { HOUSEHOLDS } from "../../lib/directory.js";
 import { MODEL } from "../../lib/llm.js";
+import demoEmails from "../../seed/data/demo-emails.json" with { type: "json" };
 
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json" } });
@@ -90,7 +91,10 @@ export default async (req: Request) => {
     if (route === "work") {
       if (!allowed(req, "passcode")) return json({ error: "wrong passcode" }, 401);
       if (fromAutomation(req)) await heartbeat();
-      return json(await workOnce());
+      // Parallel workers pass ?w=<their number>&of=<how many>; each handles its own share.
+      const of = Math.max(1, Math.min(10, Number(url.searchParams.get("of")) || 1));
+      const w = Math.max(0, Math.min(of - 1, Number(url.searchParams.get("w")) || 0));
+      return json(await workOnce({ w, of }));
     }
     if (route === "digest") {
       if (!allowed(req, "passcode")) return json({ error: "wrong passcode" }, 401);
@@ -132,7 +136,7 @@ export default async (req: Request) => {
       }).catch(() => null);
       if (!r) return json({ error: "Could not reach n8n. Check that N8N_DEMO_WEBHOOK_URL in Netlify is the workflow's Production URL." }, 502);
       if (!r.ok) return json({ error: `n8n did not accept the request (${r.status}). Is the "Live demo" workflow Active?` }, 502);
-      return json({ ok: true });
+      return json({ ok: true, expected: demoEmails.length });
     }
     if (route === "check") return json({ ok: true });
     return json({ error: "not found" }, 404);

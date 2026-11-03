@@ -15,7 +15,7 @@ process.env.LOCAL_STORE_DIR ||= path.resolve(".data");
 
 if (process.env.MOCK_LLM) (await import("./mock-model.js")).installMockModel();
 const handler = (await import("../netlify/functions/api.mjs")).default;
-const TYPES: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".pdf": "application/pdf" };
+const TYPES: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".pdf": "application/pdf", ".json": "application/json" };
 const PORT = Number(process.env.PORT || 8888);
 
 http
@@ -33,6 +33,7 @@ http
     }
     let file = path.join("public", url.pathname === "/" ? "index.html" : url.pathname);
     if (url.pathname.startsWith("/demo-pdfs/")) file = path.join("seed/data/pdfs", path.basename(url.pathname));
+    if (url.pathname === "/demo-emails.json") file = "seed/data/demo-emails.json";
     if (!path.resolve(file).startsWith(path.resolve(".")) || !fs.existsSync(file)) {
       res.writeHead(404).end("not found");
       return;

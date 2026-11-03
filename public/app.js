@@ -451,32 +451,48 @@ async function loadEval() {
 }
 
 // ---------- automation buttons ----------
+const WORKERS = 5; // agents running at the same time
 async function runNow(rethrow = false) {
   if (running) return;
   running = true;
   $("#runBtn").disabled = true;
   $("#progress").classList.remove("hidden");
   $("#liveLog").innerHTML = "";
-  const start = state?.pending.total || 1;
-  let steps = 0, idleWaits = 0, errorsInARow = 0;
-  try {
-    for (;;) {
-      const r = await post("work");
-      steps++;
-      if (r.did === "idle") break;
+  await refresh();
+  let start = Math.max(state?.pending.total || 1, 1);
+  let steps = 0, errorsInARow = 0, stop = null;
+  const show = (r) => {
+    start = Math.max(start, r.remaining);
+    $("#liveLog").insertAdjacentHTML("afterbegin", `<li>${esc(r.did)}</li>`);
+    $("#barFill").style.width = `${Math.min(100, ((start - r.remaining) / start) * 100)}%`;
+    $("#progressText").textContent = `${steps} agent runs · ${r.remaining} steps left`;
+    if (rethrow) $("#liveStatus").textContent = `Sorting documents… ${r.remaining ? `${r.remaining} steps left` : "almost done"}`;
+  };
+  // Each worker keeps asking the server for the next item until nothing is left.
+  // The server hands every item to only one worker, so they never double up.
+  const worker = async (k) => {
+    let waits = 0;
+    while (!stop) {
+      const r = await post(`work?w=${k}&of=${WORKERS}`);
+      if (r.did === "idle") return;
       if (r.did.startsWith("waiting")) {
-        if (++idleWaits > 20) break;
-        await new Promise((res) => setTimeout(res, 3000));
+        if (++waits > 60) return;
+        await new Promise((res) => setTimeout(res, 2000));
+        continue;
       }
-      $("#liveLog").insertAdjacentHTML("afterbegin", `<li>${esc(r.did)}</li>`);
+      waits = 0;
+      steps++;
+      show(r);
       errorsInARow = r.did.includes("error") ? errorsInARow + 1 : 0;
-      if (r.did.startsWith("error:") || errorsInARow >= 3) throw new Error(`Stopped: ${r.did}`);
-      const done = Math.max(0, start - r.remaining);
-      $("#barFill").style.width = `${Math.min(100, (done / Math.max(start, 1)) * 100)}%`;
-      $("#progressText").textContent = `${steps} agent runs · ${r.remaining} items left`;
-      if (rethrow) $("#liveStatus").textContent = `Sorting documents… ${r.remaining ? `${r.remaining} steps left` : "almost done"}`;
-      if (steps % 3 === 0) refresh();
+      if (r.did.startsWith("error:") || errorsInARow >= 4) stop = new Error(`Stopped: ${r.did}`);
+      if (steps % 4 === 0) refresh();
     }
+  };
+  try {
+    const results = await Promise.allSettled(Array.from({ length: WORKERS }, (_, k) => worker(k)));
+    const failed = results.find((r) => r.status === "rejected");
+    if (stop) throw stop;
+    if (failed) throw failed.reason;
     $("#barFill").style.width = "100%";
     const d = await post("digest");
     $("#progressText").textContent = `Done. ${d.summary}`;
@@ -502,15 +518,15 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function liveDemo() {
   if (running) return;
-  if (!confirm("Run the live demo? This clears the current data and emails 7 test documents to the firm’s inbox.")) return;
+  if (!confirm("Run the live demo? This clears the current data and emails the demo documents to the firm’s inbox.")) return;
   const status = $("#liveStatus");
   $("#demoPanel").classList.remove("hidden");
   $("#liveBtn").disabled = true;
   let step = 1;
   try {
     setStep(1);
-    status.textContent = "Sending 7 client emails to the firm’s inbox…";
-    await post("live-demo");
+    status.textContent = "Sending client emails to the firm’s inbox…";
+    const { expected = 1 } = await post("live-demo");
     await refresh();
 
     step = 2;
@@ -518,13 +534,13 @@ async function liveDemo() {
     const t0 = Date.now();
     let last = -1, lastChange = Date.now();
     for (;;) {
-      await sleep(5000);
+      await sleep(3000);
       await refresh();
       const n = Object.keys(state.emails).length;
       if (n !== last) { last = n; lastChange = Date.now(); }
       const secs = Math.round((Date.now() - t0) / 1000);
-      status.textContent = `Waiting for the emails to arrive… ${n} of 7 received (${secs}s)`;
-      if (n >= 7 || (n > 0 && Date.now() - lastChange > 30000)) break;
+      status.textContent = `Waiting for the emails to arrive… ${n} of ${expected} received (${secs}s)`;
+      if (n >= expected || (n > 0 && Date.now() - lastChange > 25000)) break;
       if (Date.now() - t0 > 240000) throw new Error("No emails arrived after 4 minutes. Check the Live demo workflow in n8n (Executions).");
     }
 

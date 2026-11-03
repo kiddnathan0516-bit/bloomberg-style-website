@@ -10,7 +10,7 @@
     "test": "tsx scripts/test-offline.ts",
     "run-local": "tsx scripts/run-local.ts",
     "eval": "tsx scripts/eval.ts",
-    "build": "rm -rf public/demo-pdfs && cp -r seed/data/pdfs public/demo-pdfs",
+    "build": "rm -rf public/demo-pdfs && cp -r seed/data/pdfs public/demo-pdfs && cp seed/data/demo-emails.json public/demo-emails.json",
     "dev": "tsx scripts/dev-server.ts"
   },
   "dependencies": {
