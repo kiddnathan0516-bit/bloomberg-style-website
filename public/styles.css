@@ -169,3 +169,11 @@ button.big { font-size: 16px; padding: 12px 22px; white-space: nowrap; }
 .stepper li.done b::after { content: " ✓"; color: var(--green); }
 .stepper li.failed { border-color: #f2b8b5; background: var(--red-bg); }
 @media (max-width: 900px) { .live-head { flex-direction: column; align-items: stretch; } .stepper { grid-template-columns: 1fr 1fr; } }
+
+/* clean dashboard */
+.kpis.three { grid-template-columns: repeat(3, 1fr); }
+a.kpi.link { text-decoration: none; color: inherit; transition: border-color .15s; }
+a.kpi.link:hover { border-color: var(--accent); }
+details.admin > summary { cursor: pointer; font-weight: 600; color: var(--muted); }
+details.admin[open] > summary { margin-bottom: 8px; }
+@media (max-width: 900px) { .kpis.three { grid-template-columns: 1fr; } }

@@ -85,7 +85,6 @@ async function refresh() {
   try {
     state = await api("state");
     $("#lastSync").textContent = `Updated ${new Date().toLocaleTimeString()}`;
-    $("#modelTag").textContent = `AI model: ${state.model}`;
     render();
   } catch (e) {
     $("#lastSync").textContent = `Offline: ${e.message}`;
@@ -104,16 +103,12 @@ function render() {
   $("#k-filed").textContent = filed.length;
   $("#k-review").textContent = review.length;
   $("#k-ignored").textContent = emails.filter((e) => e.status === "ignored").length;
-  $("#k-queue").textContent = state.pending.total;
+  $("#queueInfo").textContent = state.pending.total ? `${state.pending.total} items waiting to be processed.` : "Nothing waiting to be processed.";
 
   const d = state.digests[state.digests.length - 1];
   $("#digestBox").innerHTML = d
-    ? `<div class="muted">${fmtTime(d.at)}</div><p style="font-size:16px">${esc(d.summary)}</p>
-       <div class="fields"><div class="field"><div class="l">Filed</div><div class="v">${d.filed}</div></div>
-       <div class="field"><div class="l">Needs review</div><div class="v">${d.needsReview}</div></div>
-       <div class="field"><div class="l">Ignored</div><div class="v">${d.ignored}</div></div>
-       <div class="field"><div class="l">Still in queue</div><div class="v">${d.pending}</div></div></div>`
-    : "No digest yet. Run the automation.";
+    ? `<div class="muted">${fmtTime(d.at)}</div><p style="font-size:16px;margin-bottom:0">${esc(d.summary)}</p>`
+    : "Nothing processed yet.";
 
   const v = currentView();
   if (v === "inbox") renderInbox(emails);
@@ -246,11 +241,14 @@ function renderReview(items) {
         <select class="r-person"><option value="">— choose client —</option>${opts(r.suggested_person_id)}</select>
         <label>Filename (leave blank to auto-generate)</label>
         <input class="r-filename" value="${esc(r.suggested_filename || "")}" placeholder="YYYY-MM_Last-First_Source_DocType.pdf" />
-        <div class="btns">
+        ${c ? `<div class="btns">
           <button class="good r-approve">Approve &amp; file</button>
           <button class="danger r-reject">Reject</button>
-        </div>
-        ${c ? "" : '<div class="muted">This document was never classified, so it can only be rejected.</div>'}
+        </div>` : `<div class="muted">The Intake Agent stopped before reading this document. If you trust the sender, let the agents continue. They will still ask you if they are unsure who it belongs to.</div>
+        <div class="btns">
+          <button class="good r-release">Sender is OK → let the agents continue</button>
+          <button class="danger r-reject">Reject</button>
+        </div>`}
       </div>
     </div>`;
   }).join("");
@@ -263,6 +261,13 @@ async function reviewClick(btn) {
     if (btn.classList.contains("r-reject")) {
       await post(`review/${encodeURIComponent(id)}`, { action: "reject" });
       toast(`Rejected ${id}`);
+    } else if (btn.classList.contains("r-release")) {
+      await post(`review/${encodeURIComponent(id)}`, { action: "release" });
+      toast("Sent back to the agents. Running them now; see the Dashboard.");
+      btn.blur();
+      location.hash = "#dashboard";
+      await refresh();
+      return runNow();
     } else {
       const person_id = card.querySelector(".r-person").value;
       const filename = card.querySelector(".r-filename").value.trim();
@@ -328,12 +333,13 @@ async function runNow(rethrow = false) {
       const done = Math.max(0, start - r.remaining);
       $("#barFill").style.width = `${Math.min(100, (done / Math.max(start, 1)) * 100)}%`;
       $("#progressText").textContent = `${steps} agent runs · ${r.remaining} items left`;
+      if (rethrow) $("#liveStatus").textContent = `Sorting documents… ${r.remaining ? `${r.remaining} steps left` : "almost done"}`;
       if (steps % 3 === 0) refresh();
     }
     $("#barFill").style.width = "100%";
     const d = await post("digest");
     $("#progressText").textContent = `Done. ${d.summary}`;
-    toast("Automation finished. Digest saved.");
+    toast("All done. Summary saved.");
   } catch (e) {
     if (rethrow) throw e;
     toast(e.message, true);
@@ -361,7 +367,7 @@ async function liveDemo() {
   let step = 1;
   try {
     setStep(1);
-    status.textContent = "Asking n8n to send the emails through Gmail…";
+    status.textContent = "Sending 6 client emails to the firm’s inbox…";
     await post("live-demo");
     await refresh();
 
@@ -375,18 +381,18 @@ async function liveDemo() {
       const n = Object.keys(state.emails).length;
       if (n !== last) { last = n; lastChange = Date.now(); }
       const secs = Math.round((Date.now() - t0) / 1000);
-      status.textContent = `Waiting for Gmail → n8n → app… ${n} of 6 emails received (${secs}s)`;
+      status.textContent = `Waiting for the emails to arrive… ${n} of 6 received (${secs}s)`;
       if (n >= 6 || (n > 0 && Date.now() - lastChange > 30000)) break;
       if (Date.now() - t0 > 240000) throw new Error("No emails arrived after 4 minutes. Check the Live demo workflow in n8n (Executions).");
     }
 
     step = 3;
     setStep(3);
-    status.textContent = "AI agents are working. Watch the steps below.";
+    status.textContent = "Sorting documents…";
     await runNow(true);
 
     setStep(5);
-    status.textContent = "Done. Open Inbox, Sorted Files and the Review Queue to see what the agents did.";
+    status.textContent = "Done. See Sorted Files for what was filed and the Review Queue for what needs you.";
   } catch (e) {
     setStep(step, "failed");
     status.textContent = e.message;
@@ -416,7 +422,7 @@ document.addEventListener("click", (ev) => {
   if (row) return openEmail(row.dataset.email);
   const file = ev.target.closest(".tree .file");
   if (file) return previewDoc(file.dataset.doc);
-  const btn = ev.target.closest(".r-approve, .r-reject");
+  const btn = ev.target.closest(".r-approve, .r-reject, .r-release");
   if (btn) return reviewClick(btn);
 });
 

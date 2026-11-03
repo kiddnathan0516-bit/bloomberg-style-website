@@ -49,4 +49,20 @@ assert.equal(after.docs.D19.status, "filed");
 assert.equal(after.docs.D19.filing!.filename, "2025-12_Patel-Raj_Schwab_1099.pdf");
 await reviewAction("D20", "reject");
 assert.equal((await loadState()).docs.D20.status, "rejected");
+// Human releases a document the Intake Agent stopped on -> agents finish it
+const { updateState } = await import("../lib/store.js");
+await updateState((st) => {
+  const d = st.docs.D16;
+  d.status = "review";
+  d.classification = undefined;
+  d.filing = undefined;
+  st.emails.E14.status = "needs_review";
+});
+await reviewAction("D16", "release");
+assert.equal((await loadState()).docs.D16.status, "to_classify");
+for (let i = 0; i < 5 && (await workOnce()).did !== "idle"; i++);
+const released = (await loadState()).docs.D16;
+assert.equal(released.status, "filed", "released doc gets filed by the agents");
+assert.equal(released.filing!.person_id, "P-TNGUYEN");
+
 console.log("ALL OFFLINE TESTS PASSED");

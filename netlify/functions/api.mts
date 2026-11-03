@@ -120,7 +120,8 @@ export default async (req: Request) => {
         method: "POST",
         headers: { "content-type": "application/json", "x-intake-secret": process.env.INTAKE_SECRET ?? "" },
         body: JSON.stringify({ startedAt: Math.floor(Date.now() / 1000) }),
-      });
+      }).catch(() => null);
+      if (!r) return json({ error: "Could not reach n8n. Check that N8N_DEMO_WEBHOOK_URL in Netlify is the workflow's Production URL." }, 502);
       if (!r.ok) return json({ error: `n8n did not accept the request (${r.status}). Is the "Live demo" workflow Active?` }, 502);
       return json({ ok: true });
     }

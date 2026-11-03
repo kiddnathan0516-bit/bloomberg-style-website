@@ -256,7 +256,7 @@ function refreshEmailStatus(s: AppState, emailId: string) {
 // ---------------------------------------------------------------------------
 export async function reviewAction(
   docId: string,
-  action: "approve" | "reject" | "edit",
+  action: "approve" | "reject" | "edit" | "release",
   edit?: { person_id: string; filename?: string },
 ) {
   let message = "";
@@ -266,6 +266,25 @@ export async function reviewAction(
     if (action === "reject") {
       d.status = "rejected";
       message = `Rejected ${docId} (not filed)`;
+    } else if (action === "release") {
+      // A person confirmed the sender is legitimate: hand the document back to the
+      // Classifier and Filing agents. The confidence rules still apply to them.
+      if (d.classification) throw new Error("This document was already classified. Approve or reject it instead.");
+      const e = s.emails[d.emailId];
+      d.status = "to_classify";
+      d.review = undefined;
+      d.attempts = 0;
+      if (e) {
+        e.status = "processing";
+        if (e.intake) {
+          e.intake = {
+            ...e.intake,
+            decision: "process",
+            reasoning: `${e.intake.reasoning} [A human reviewer confirmed this sender is legitimate client business.]`,
+          };
+        }
+      }
+      message = `Human confirmed the sender of ${docId}; sent back to the agents`;
     } else {
       const personId = action === "edit" ? edit?.person_id : d.review?.suggested_person_id;
       const p = personById(personId);
@@ -293,6 +312,8 @@ export async function reviewAction(
 // ---------------------------------------------------------------------------
 // Ops digest (automation step, no AI)
 // ---------------------------------------------------------------------------
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
 export async function makeDigest(): Promise<Digest> {
   let digest!: Digest;
   await updateState((s) => {
@@ -311,9 +332,10 @@ export async function makeDigest(): Promise<Digest> {
       pending,
       emailsProcessed: emails.filter((e) => e.status !== "queued").length,
       summary:
-        `${filed} documents filed across ${households} households. ` +
-        `${needsReview} need human review. ${ignored} emails ignored (newsletters, spam, scheduling). ` +
-        (pending ? `${pending} items still in progress.` : "Inbox is clear."),
+        `${plural(filed, "document")} filed across ${plural(households, "household")}. ` +
+        `${needsReview} ${needsReview === 1 ? "needs" : "need"} human review. ` +
+        `${plural(ignored, "email")} ignored (newsletters, spam, scheduling). ` +
+        (pending ? `${plural(pending, "item")} still in progress.` : "Inbox is clear."),
     };
     s.digests.push(digest);
     if (s.digests.length > 50) s.digests = s.digests.slice(-50);

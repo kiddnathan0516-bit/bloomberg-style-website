@@ -34,7 +34,7 @@
   <main>
     <header class="topbar">
       <h1 id="viewTitle">Dashboard</h1>
-      <div class="topbar-right"><span id="modelTag" class="tag"></span><span id="lastSync" class="muted"></span></div>
+      <div class="topbar-right"><span id="lastSync" class="muted"></span></div>
     </header>
     <div id="toast" class="toast hidden"></div>
 
@@ -43,62 +43,47 @@
       <div class="card live">
         <div class="live-head">
           <div>
-            <h2>Live demo</h2>
-            <p class="muted">One click runs the whole system: real emails go through Gmail, n8n hands them to the agents, and documents land in folders.</p>
+            <h2>Client document inbox</h2>
+            <p class="muted">New client emails are read, sorted and filed automatically. Anything uncertain waits for your review.</p>
           </div>
           <button class="primary big" id="liveBtn">▶ Run live demo</button>
         </div>
         <ol class="stepper" id="stepper">
-          <li data-step="1"><b>Send</b><span>n8n emails 6 client documents to the firm’s Gmail</span></li>
-          <li data-step="2"><b>Receive</b><span>n8n reads Gmail and hands the emails to this app</span></li>
-          <li data-step="3"><b>AI agents</b><span>Intake → Classifier → Filing, for every email</span></li>
-          <li data-step="4"><b>Digest</b><span>Ops summary saved; uncertain docs wait for review</span></li>
+          <li data-step="1"><b>Emails sent</b><span>Clients email their documents</span></li>
+          <li data-step="2"><b>Emails received</b><span>New mail is picked up from the inbox</span></li>
+          <li data-step="3"><b>Sorting</b><span>Each document is read, matched to a client and filed</span></li>
+          <li data-step="4"><b>Summary</b><span>Today’s summary is ready</span></li>
         </ol>
         <div id="liveStatus" class="muted"></div>
       </div>
-      <div class="kpis">
-        <div class="kpi"><div class="kpi-label">Documents filed</div><div class="kpi-value" id="k-filed">0</div></div>
-        <div class="kpi"><div class="kpi-label">Needs review</div><div class="kpi-value warn" id="k-review">0</div></div>
-        <div class="kpi"><div class="kpi-label">Emails ignored</div><div class="kpi-value" id="k-ignored">0</div></div>
-        <div class="kpi"><div class="kpi-label">In queue</div><div class="kpi-value" id="k-queue">0</div></div>
-      </div>
 
-      <div class="grid2">
-        <div class="card">
-          <h2>Run the automation</h2>
-          <p class="muted">Every 5 minutes, n8n checks the Gmail inbox, sends new emails here and runs the agents. You can also run it yourself.</p>
-          <div class="btns">
-            <button class="primary" id="runBtn">Run now</button>
-            <button id="seedBtn">Load demo inbox</button>
-            <button id="digestBtn">Generate digest</button>
-            <button class="danger" id="resetBtn">Reset</button>
-          </div>
-          <div id="progress" class="progress hidden">
-            <div class="bar"><div id="barFill"></div></div>
-            <div id="progressText" class="muted"></div>
-            <ol id="liveLog" class="live-log"></ol>
-          </div>
-        </div>
-        <div class="card">
-          <h2>Latest ops digest</h2>
-          <div id="digestBox" class="muted">No digest yet. Run the automation.</div>
-        </div>
+      <div class="kpis three">
+        <a class="kpi link" href="#files"><div class="kpi-label">Documents filed</div><div class="kpi-value" id="k-filed">0</div></a>
+        <a class="kpi link" href="#review"><div class="kpi-label">Needs your review</div><div class="kpi-value warn" id="k-review">0</div></a>
+        <a class="kpi link" href="#inbox"><div class="kpi-label">Emails ignored</div><div class="kpi-value" id="k-ignored">0</div></a>
       </div>
 
       <div class="card">
-        <h2>How it works</h2>
-        <div class="flow">
-          <div class="flow-step auto"><b>Automation (n8n)</b><span>Every 5 min: pull new Gmail emails + PDFs, send them here, run the agents, write the digest</span></div>
-          <div class="arrow">→</div>
-          <div class="flow-step agent"><b>1 · Intake Agent</b><span>Real client documents or junk? Who sent it?</span></div>
-          <div class="arrow">→</div>
-          <div class="flow-step agent"><b>2 · Classifier Agent</b><span>Reads the PDF (OCR for scans): type, custodian, date, last 4</span></div>
-          <div class="arrow">→</div>
-          <div class="flow-step agent"><b>3 · Filing Agent</b><span>Matches the client, names the file, creates folders, files it</span></div>
-          <div class="arrow">→</div>
-          <div class="flow-step human"><b>Human review</b><span>Anything below 80% confidence waits for approval</span></div>
-        </div>
+        <h2>Today’s summary</h2>
+        <div id="digestBox" class="muted">Nothing processed yet.</div>
       </div>
+
+      <details class="card admin">
+        <summary>Admin tools</summary>
+        <p class="muted">For setup and troubleshooting. Normally the system runs on its own every 5 minutes.</p>
+        <div class="btns">
+          <button class="primary" id="runBtn">Process queue now</button>
+          <button id="seedBtn">Load sample inbox</button>
+          <button id="digestBtn">Write summary</button>
+          <button class="danger" id="resetBtn">Reset</button>
+        </div>
+        <div class="muted" id="queueInfo"></div>
+        <div id="progress" class="progress hidden">
+          <div class="bar"><div id="barFill"></div></div>
+          <div id="progressText" class="muted"></div>
+          <ol id="liveLog" class="live-log"></ol>
+        </div>
+      </details>
     </section>
 
     <!-- INBOX -->
