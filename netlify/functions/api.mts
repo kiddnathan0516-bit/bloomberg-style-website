@@ -111,6 +111,19 @@ export default async (req: Request) => {
       const docId = decodeURIComponent(route.slice(7));
       return json(await reviewAction(docId, body.action, body.edit));
     }
+    if (route === "live-demo") {
+      // The one-click demo: clear old data, then ask n8n to email the test documents through Gmail.
+      const hook = process.env.N8N_DEMO_WEBHOOK_URL;
+      if (!hook) return json({ error: "N8N_DEMO_WEBHOOK_URL is not set in Netlify. See the README, 'One-click live demo'." }, 400);
+      await resetState();
+      const r = await fetch(hook, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-intake-secret": process.env.INTAKE_SECRET ?? "" },
+        body: JSON.stringify({ startedAt: Math.floor(Date.now() / 1000) }),
+      });
+      if (!r.ok) return json({ error: `n8n did not accept the request (${r.status}). Is the "Live demo" workflow Active?` }, 502);
+      return json({ ok: true });
+    }
     if (route === "check") return json({ ok: true });
     return json({ error: "not found" }, 404);
   } catch (err) {

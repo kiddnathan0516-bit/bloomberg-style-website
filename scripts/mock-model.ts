@@ -24,7 +24,9 @@ const taskText = (p: any) => (typeof p.messages[0].content === "string" ? p.mess
 
   if (sys.includes("Your role: Intake Agent")) {
     const from = /From: .*<(.+)>/.exec(taskText(p))![1];
-    const e = emails.find((x: any) => x.from === from && taskText(p).includes(`Subject: ${x.subject}`));
+    const e =
+      emails.find((x: any) => x.from === from && taskText(p).includes(`Subject: ${x.subject}\n`)) ??
+      emails.find((x: any) => taskText(p).includes(`Subject: ${x.subject}\n`)); // re-sent through Gmail
     if (turn === 0) return reply([use("lookup_sender", { email: from })]);
     const exp = key.emails[e.id].expected;
     const s: any = lookupSender(from);
@@ -38,7 +40,9 @@ const taskText = (p: any) => (typeof p.messages[0].content === "string" ? p.mess
     const t = taskText(p);
     const fname = /Attachment filename: (.+)/.exec(t)![1];
     const from = /from .* <(.+)> with subject/.exec(t)![1];
-    const em = emails.find((x: any) => x.from === from && x.attachments.some((a: any) => a.filename === fname));
+    const em =
+      emails.find((x: any) => x.from === from && x.attachments.some((a: any) => a.filename === fname)) ??
+      emails.find((x: any) => x.attachments.some((a: any) => a.filename === fname));
     const docId = em.attachments.find((a: any) => a.filename === fname).docId;
     const a = key.documents[docId];
     if (turn === 0) return reply([use("read_document_text", {})]);
@@ -49,7 +53,11 @@ const taskText = (p: any) => (typeof p.messages[0].content === "string" ? p.mess
     })]);
   }
   if (sys.includes("Your role: Filing Agent")) {
-    const docId = /Document id: (\S+)/.exec(taskText(p))![1];
+    let docId = /Document id: (\S+)/.exec(taskText(p))![1];
+    if (!key.documents[docId]) {
+      const fname = /\(attachment "(.+)"\)/.exec(taskText(p))![1];
+      docId = emails.flatMap((x: any) => x.attachments).find((a: any) => a.filename === fname).docId;
+    }
     const a = key.documents[docId];
     if (a.expected_outcome === "review")
       return reply([use("send_to_review", { reason: "ambiguous", suggested_household_id: null, suggested_person_id: null, suggested_filename: null, confidence: 0.4 })]);

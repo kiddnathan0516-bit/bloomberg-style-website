@@ -305,7 +305,7 @@ async function loadEval() {
 }
 
 // ---------- automation buttons ----------
-async function runNow() {
+async function runNow(rethrow = false) {
   if (running) return;
   running = true;
   $("#runBtn").disabled = true;
@@ -335,6 +335,7 @@ async function runNow() {
     $("#progressText").textContent = `Done. ${d.summary}`;
     toast("Automation finished. Digest saved.");
   } catch (e) {
+    if (rethrow) throw e;
     toast(e.message, true);
   } finally {
     running = false;
@@ -343,7 +344,60 @@ async function runNow() {
   }
 }
 
-$("#runBtn").onclick = runNow;
+// ---------- one-click live demo ----------
+function setStep(n, cls) {
+  document.querySelectorAll("#stepper li").forEach((li) => {
+    const k = Number(li.dataset.step);
+    li.className = k < n ? "done" : k === n ? cls || "active" : "";
+  });
+}
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function liveDemo() {
+  if (running) return;
+  if (!confirm("Run the live demo? This clears the current data and emails 6 test documents to the demo Gmail.")) return;
+  const status = $("#liveStatus");
+  $("#liveBtn").disabled = true;
+  let step = 1;
+  try {
+    setStep(1);
+    status.textContent = "Asking n8n to send the emails through Gmail…";
+    await post("live-demo");
+    await refresh();
+
+    step = 2;
+    setStep(2);
+    const t0 = Date.now();
+    let last = -1, lastChange = Date.now();
+    for (;;) {
+      await sleep(5000);
+      await refresh();
+      const n = Object.keys(state.emails).length;
+      if (n !== last) { last = n; lastChange = Date.now(); }
+      const secs = Math.round((Date.now() - t0) / 1000);
+      status.textContent = `Waiting for Gmail → n8n → app… ${n} of 6 emails received (${secs}s)`;
+      if (n >= 6 || (n > 0 && Date.now() - lastChange > 30000)) break;
+      if (Date.now() - t0 > 240000) throw new Error("No emails arrived after 4 minutes. Check the Live demo workflow in n8n (Executions).");
+    }
+
+    step = 3;
+    setStep(3);
+    status.textContent = "AI agents are working. Watch the steps below.";
+    await runNow(true);
+
+    setStep(5);
+    status.textContent = "Done. Open Inbox, Sorted Files and the Review Queue to see what the agents did.";
+  } catch (e) {
+    setStep(step, "failed");
+    status.textContent = e.message;
+    toast(e.message, true);
+  } finally {
+    $("#liveBtn").disabled = false;
+  }
+}
+
+$("#liveBtn").onclick = liveDemo;
+$("#runBtn").onclick = () => runNow();
 $("#seedBtn").onclick = async () => {
   if (!confirm("Load the 25 demo emails? This clears current data.")) return;
   try { const r = await post("seed"); toast(`Loaded ${r.emails} demo emails. Click Run now.`); refresh(); } catch (e) { toast(e.message, true); }

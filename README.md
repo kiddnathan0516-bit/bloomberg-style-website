@@ -65,6 +65,7 @@ rules, privacy rules, ambiguity rules and worked examples. Every agent's system 
    | `DEMO_PASSCODE` | any password you choose (protects the buttons that run the AI) |
    | `INTAKE_SECRET` | any long random phrase (lets n8n send emails in) |
    | `CLAUDE_MODEL` *(optional)* | defaults to `claude-opus-5-5` |
+   | `N8N_DEMO_WEBHOOK_URL` *(optional)* | the live-demo workflow's webhook URL (see "One-click live demo") |
 3. Deploy, then open the site → **Enter passcode** → **Load demo inbox** → **Run now**.
 
 ## Connect Gmail with n8n
@@ -80,7 +81,18 @@ rules, privacy rules, ambiguity rules and worked examples. Every agent's system 
 
 Don't commit your edited workflow back to GitHub. It contains your secret.
 
-### One-click test emails
+### One-click live demo (website button)
+
+The **Run live demo** button on the Dashboard runs the whole system:
+website → n8n emails 6 test documents through Gmail → n8n reads them back from Gmail → the agents
+process them → digest. Setup:
+
+1. Import `n8n/live-demo.json` into n8n. Connect your Gmail credential on both Gmail steps.
+2. In **Build emails + download fake PDFs**, set `SITE_URL`, `DEMO_GMAIL` and `INTAKE_SECRET`.
+3. Save and set the workflow **Active**. Open **Website button**, copy the **Production URL**.
+4. In Netlify, add `N8N_DEMO_WEBHOOK_URL` = that URL, then redeploy.
+
+### One-click test emails (n8n only)
 
 `n8n/send-demo-emails.json` is a second workflow that emails 6 test cases to the demo Gmail with the
 fake PDFs attached (a normal statement, a spouse sending a rollover form, a scanned ID, a statement with

@@ -1,0 +1,175 @@
+{
+  "name": "RIA Doc Inbox - Live demo (website button)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ria-live-demo",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "c3f2e8b1-0001-4c1e-9a10-000000000001",
+      "name": "Website button",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "c3f2e8b1-0001-4c1e-9a10-0000000000aa"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Runs when you click \"Run live demo\" on the website.\n// >>> EDIT THESE THREE LINES (the only settings in this workflow) <<<\nconst SITE_URL = 'https://YOUR-SITE.netlify.app';\nconst DEMO_GMAIL = 'your-demo-inbox@gmail.com';\nconst INTAKE_SECRET = 'PASTE-YOUR-INTAKE_SECRET-HERE';\n\nconst req = $('Website button').first().json;\nif ((req.headers || {})['x-intake-secret'] !== INTAKE_SECRET) throw new Error('Wrong or missing secret: check INTAKE_SECRET here and in Netlify.');\nconst startedAt = Number(req.body?.startedAt) || Math.floor(Date.now() / 1000);\n\n// Each email tests a different situation. Add or remove rows as you like.\nconst EMAILS = [\n  { pdf: 'D01', file: 'Statement_Q3.pdf', subject: 'Q3 statement',\n    body: 'Hi team,\\n\\nAttached is my Schwab statement for Q3.\\n\\nThanks,\\nJohn Smith' },\n  { pdf: 'D03', file: 'rollover paperwork.pdf', subject: \"David's rollover paperwork\",\n    body: \"Hi! David asked me to send this over since he's traveling. It's his signed rollover form.\\n\\nBest,\\nMary Chen\" },\n  { pdf: 'D09', file: 'scan0001.pdf', subject: 'ID',\n    body: \"Here's a scan of my license for your records.\\nCarlos Rodriguez\" },\n  { pdf: 'D13', file: 'statement.pdf', subject: 'fwd: statement',\n    body: 'See attached.\\n\\nMark' },\n  { pdf: 'D19', file: 'Patel 1099.pdf', subject: '1099 for Patel',\n    body: 'Hello, forwarding the 1099 for our mutual client Patel. Please confirm receipt.\\n\\nLakeside CPA Group' },\n  { pdf: 'X01', file: 'invoice_8822.pdf', subject: 'URGENT: invoice attached - account suspension',\n    body: 'Your account will be suspended. Open the attached invoice and pay immediately.' },\n];\n\nconst out = [];\nfor (const e of EMAILS) {\n  const pdf = await this.helpers.httpRequest({\n    method: 'GET', url: `${SITE_URL}/demo-pdfs/${e.pdf}.pdf`, encoding: 'arraybuffer', timeout: 30000,\n  });\n  const binary = await this.helpers.prepareBinaryData(Buffer.from(pdf), e.file, 'application/pdf');\n  out.push({ json: { to: DEMO_GMAIL, subject: e.subject, body: e.body, startedAt: startedAt - 60, siteUrl: SITE_URL, secret: INTAKE_SECRET }, binary: { data: binary } });\n}\nreturn out;"
+      },
+      "id": "c3f2e8b1-0002-4c1e-9a10-000000000002",
+      "name": "Build emails + download fake PDFs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "sendTo": "={{ $json.to }}",
+        "subject": "={{ $json.subject }}",
+        "emailType": "text",
+        "message": "={{ $json.body }}",
+        "options": {
+          "appendAttribution": false,
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {
+                "property": "data"
+              }
+            ]
+          }
+        }
+      },
+      "id": "c3f2e8b1-0003-4c1e-9a10-000000000003",
+      "name": "Send the emails with Gmail",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": 30,
+        "unit": "seconds"
+      },
+      "id": "c3f2e8b1-0004-4c1e-9a10-000000000004",
+      "name": "Wait 30 sec for Gmail",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        0
+      ],
+      "webhookId": "c3f2e8b1-0004-4c1e-9a10-0000000000bb"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "returnAll": false,
+        "limit": 20,
+        "simple": false,
+        "filters": {
+          "q": "=in:inbox after:{{ $('Build emails + download fake PDFs').first().json.startedAt }}"
+        },
+        "options": {
+          "downloadAttachments": true
+        }
+      },
+      "id": "c3f2e8b1-0005-4c1e-9a10-000000000005",
+      "name": "Read the new emails from Gmail",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        960,
+        0
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Hands the emails n8n just read from Gmail to the website (settings come from the first code step).\nconst cfg = $('Build emails + download fake PDFs').first().json;\nconst SITE_URL = cfg.siteUrl;\nconst INTAKE_SECRET = cfg.secret;\n\nconst results = [];\nconst items = $input.all();\nfor (let i = 0; i < items.length; i++) {\n  const mail = items[i].json;\n  const attachments = [];\n  for (const key of Object.keys(items[i].binary || {})) {\n    const meta = items[i].binary[key];\n    const isPdf = (meta.mimeType || '').includes('pdf') || (meta.fileName || '').toLowerCase().endsWith('.pdf');\n    if (!isPdf) continue;\n    const buf = await this.helpers.getBinaryDataBuffer(i, key);\n    attachments.push({ filename: meta.fileName || `${key}.pdf`, contentType: 'application/pdf', base64: buf.toString('base64') });\n  }\n  const from = mail.from?.value?.[0] || {};\n  const payload = {\n    messageId: mail.messageId || mail.id,\n    from: from.address || mail.from?.text || 'unknown',\n    fromName: from.name || from.address || '',\n    subject: mail.subject || '',\n    body: (mail.text || '').slice(0, 8000),\n    receivedAt: mail.date || new Date().toISOString(),\n    attachments,\n  };\n  const full = await this.helpers.httpRequest({\n    method: 'POST', url: `${SITE_URL}/api/intake`, json: true, body: payload,\n    headers: { 'x-intake-secret': INTAKE_SECRET }, timeout: 60000,\n    returnFullResponse: true, ignoreHttpStatusErrors: true,\n  });\n  if (full.statusCode >= 400) {\n    throw new Error(`Website said ${full.statusCode}: ${JSON.stringify(full.body).slice(0, 500)}`);\n  }\n  const res = full.body;\n  results.push({ json: { subject: payload.subject, from: payload.from, pdfs: attachments.length, result: res } });\n}\nreturn results.length ? results : [{ json: { note: 'no new emails' } }];"
+      },
+      "id": "c3f2e8b1-0006-4c1e-9a10-000000000006",
+      "name": "Send emails + PDFs to the website",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Website button": {
+      "main": [
+        [
+          {
+            "node": "Build emails + download fake PDFs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build emails + download fake PDFs": {
+      "main": [
+        [
+          {
+            "node": "Send the emails with Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send the emails with Gmail": {
+      "main": [
+        [
+          {
+            "node": "Wait 30 sec for Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 30 sec for Gmail": {
+      "main": [
+        [
+          {
+            "node": "Read the new emails from Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the new emails from Gmail": {
+      "main": [
+        [
+          {
+            "node": "Send emails + PDFs to the website",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

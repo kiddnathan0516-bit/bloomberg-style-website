@@ -40,6 +40,22 @@
 
     <!-- DASHBOARD -->
     <section id="view-dashboard" class="view">
+      <div class="card live">
+        <div class="live-head">
+          <div>
+            <h2>Live demo</h2>
+            <p class="muted">One click runs the whole system: real emails go through Gmail, n8n hands them to the agents, and documents land in folders.</p>
+          </div>
+          <button class="primary big" id="liveBtn">▶ Run live demo</button>
+        </div>
+        <ol class="stepper" id="stepper">
+          <li data-step="1"><b>Send</b><span>n8n emails 6 client documents to the firm’s Gmail</span></li>
+          <li data-step="2"><b>Receive</b><span>n8n reads Gmail and hands the emails to this app</span></li>
+          <li data-step="3"><b>AI agents</b><span>Intake → Classifier → Filing, for every email</span></li>
+          <li data-step="4"><b>Digest</b><span>Ops summary saved; uncertain docs wait for review</span></li>
+        </ol>
+        <div id="liveStatus" class="muted"></div>
+      </div>
       <div class="kpis">
         <div class="kpi"><div class="kpi-label">Documents filed</div><div class="kpi-value" id="k-filed">0</div></div>
         <div class="kpi"><div class="kpi-label">Needs review</div><div class="kpi-value warn" id="k-review">0</div></div>

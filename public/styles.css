@@ -154,3 +154,18 @@ pre.body { white-space: pre-wrap; background: #fafbfd; border: 1px solid var(--l
   .grid2, .files-layout, .review-card { grid-template-columns: 1fr; }
   .kpis { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* live demo */
+.card.live { border: 2px solid #cddcf3; }
+.live-head { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+.live-head p { margin: 0; }
+button.big { font-size: 16px; padding: 12px 22px; white-space: nowrap; }
+.stepper { list-style: none; padding: 0; margin: 16px 0 8px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.stepper li { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--muted); background: #fafbfd; }
+.stepper li b { font-size: 13px; color: var(--ink); }
+.stepper li.active { border-color: var(--accent); background: #e7f0fc; }
+.stepper li.active b::after { content: " · working…"; color: var(--accent); font-weight: 500; }
+.stepper li.done { border-color: #9fd6c0; background: var(--green-bg); }
+.stepper li.done b::after { content: " ✓"; color: var(--green); }
+.stepper li.failed { border-color: #f2b8b5; background: var(--red-bg); }
+@media (max-width: 900px) { .live-head { flex-direction: column; align-items: stretch; } .stepper { grid-template-columns: 1fr 1fr; } }
