@@ -81,6 +81,7 @@ export interface EmailRecord {
   trace: TraceStep[];
   attempts: number;
   claimedUntil?: string;
+  claimedBy?: string;
   updatedAt: string;
 }
 
@@ -90,11 +91,13 @@ export interface DocRecord {
   originalName: string;
   status: DocStatus;
   classification?: Classification;
+  evidence?: string; // masked text the Classifier read from the PDF (used by the evidence check)
   filing?: Filing;
   review?: ReviewInfo;
   trace: TraceStep[];
   attempts: number;
   claimedUntil?: string;
+  claimedBy?: string;
   updatedAt: string;
 }
 

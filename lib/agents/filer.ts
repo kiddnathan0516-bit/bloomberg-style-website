@@ -6,7 +6,7 @@
 import { FIRM_POLICY, FOLDER_FOR_TYPE, CONFIDENCE_THRESHOLD } from "../policy.js";
 import { runAgent, ToolError, type AgentTool } from "../llm.js";
 import { findByAccountLast4, householdSummary, personById, searchClients, fullName, householdById } from "../directory.js";
-import { FILENAME_RE, belowThreshold, clampConfidence, nameToken } from "../guardrails.js";
+import { FILENAME_RE, belowThreshold, clampConfidence, nameToken, documentMentions } from "../guardrails.js";
 import type { AppState, Classification, EmailRecord, Filing, ReviewInfo } from "../types.js";
 
 const SYSTEM = `${FIRM_POLICY}
@@ -38,6 +38,7 @@ export async function runFilingAgent(
   email: EmailRecord,
   classification: Classification,
   state: AppState,
+  evidence = "",
 ) {
   const createdFolders = new Set<string>();
   const folderExists = (f: string) => state.folders.includes(f) || createdFolders.has(f);
@@ -111,6 +112,10 @@ export async function runFilingAgent(
         const conf = Math.min(clampConfidence(input.confidence), classification.confidence);
         if (belowThreshold(conf))
           throw new ToolError(`Confidence ${conf.toFixed(2)} is below ${CONFIDENCE_THRESHOLD}. Use send_to_review instead.`);
+        // Guardrail: the document itself must point to this person (checked in code).
+        const check = documentMentions(evidence, p);
+        if (!check.ok)
+          throw new ToolError(`Evidence check failed: ${check.why}. It cannot be auto-filed; use send_to_review.`);
         if (!FILENAME_RE.test(input.filename))
           throw new ToolError(`Filename "${input.filename}" does not follow YYYY-MM_Last-First_Source_DocType.pdf`);
         const folder = folderFor(input.household_id, input.person_id, classification.doc_type);

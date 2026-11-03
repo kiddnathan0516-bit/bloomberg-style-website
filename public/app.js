@@ -8,7 +8,11 @@ let state = null;
 let directory = [];
 let running = false;
 let passcode = "";
-try { passcode = localStorage.getItem("ria-passcode") || ""; } catch {}
+// The passcode is kept only for this browser tab (sessionStorage), not saved permanently.
+try {
+  localStorage.removeItem("ria-passcode"); // clean up the older, permanent copy
+  passcode = sessionStorage.getItem("ria-passcode") || "";
+} catch {}
 
 // ---------- API ----------
 async function api(path, opts = {}) {
@@ -19,7 +23,7 @@ async function api(path, opts = {}) {
   });
   const data = await res.json().catch(() => ({}));
   if (res.status === 401) {
-    askPasscode();
+    if (await askPasscode()) return api(path, opts); // retry once with the new passcode
     throw new Error("Passcode required");
   }
   if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
@@ -27,16 +31,38 @@ async function api(path, opts = {}) {
 }
 const post = (path, body = {}) => api(path, { method: "POST", body });
 
+// Only one passcode prompt at a time, even if several requests are refused together.
+let asking = null;
 function askPasscode() {
-  const p = prompt("Enter the demo passcode (set as DEMO_PASSCODE in Netlify):", passcode);
-  if (p !== null) {
-    passcode = p.trim();
-    try { localStorage.setItem("ria-passcode", passcode); } catch {}
-    updateLock();
-  }
+  asking ??= new Promise((resolve) => {
+    setTimeout(() => {
+      const p = prompt("Enter the passcode to open RIA Doc Inbox:", "");
+      asking = null;
+      if (p === null || !p.trim()) return resolve(false);
+      passcode = p.trim();
+      try { sessionStorage.setItem("ria-passcode", passcode); } catch {}
+      updateLock();
+      resolve(true);
+    }, 0);
+  });
+  return asking;
 }
 function updateLock() {
-  $("#lockBtn").textContent = passcode ? "Passcode saved ✓ (change)" : "Enter passcode";
+  $("#lockBtn").textContent = passcode ? "Unlocked ✓ (change passcode)" : "Enter passcode";
+}
+
+// PDFs are fetched with the passcode and shown from a temporary in-browser copy,
+// so the files are never opened directly from the site's address.
+async function pdfUrl(id) {
+  const res = await fetch(`/api/pdf/${encodeURIComponent(id)}`, { headers: { "x-passcode": passcode } });
+  if (res.status === 401 && (await askPasscode())) return pdfUrl(id);
+  if (!res.ok) throw new Error("Could not open the document");
+  return URL.createObjectURL(new Blob([await res.arrayBuffer()], { type: "application/pdf" }));
+}
+async function openPdf(id) {
+  const win = window.open("", "_blank");
+  try { const u = await pdfUrl(id); if (win) win.location = u; else location.assign(u); }
+  catch (e) { if (win) win.close(); toast(e.message, true); }
 }
 
 function toast(msg, isErr = false) {
@@ -225,7 +251,7 @@ function openEmail(id) {
     ${docs.length ? `<div class="d-docs">${docs.map((d) => `<div class="d-doc">${docChip(d)}
       ${d.filing ? `<div class="muted small">Saved as <b>${esc(d.filing.filename)}</b> in ${esc(folderLabel(d.filing.folder))}</div>` : ""}
       ${d.review ? `<div class="muted small">Why it needs review: ${esc(d.review.reason)}</div>` : ""}
-      <a class="small" href="/api/pdf/${encodeURIComponent(d.id)}" target="_blank">Open PDF ↗</a></div>`).join("")}</div>` : '<div class="muted">No attachments</div>'}
+      <a class="small" href="#" data-pdf="${esc(d.id)}">Open PDF ↗</a></div>`).join("")}</div>` : '<div class="muted">No attachments</div>'}
     <h3 class="d-label">What the AI decided</h3>
     <div class="verdict">${pill(EMAIL_PILL, e.status)} <span>${esc(verdict)}</span>${i ? `<span class="muted small"> ${pct(i.confidence)} confident</span>` : ""}</div>
     ${i ? `<p class="muted">${esc(i.reasoning)}</p>` : ""}
@@ -328,13 +354,14 @@ function openDoc(id) {
       ${c.ending_balance != null ? field("Ending balance", `$${Number(c.ending_balance).toLocaleString()}`) : ""}
       ${field("Received from", esc(e?.fromName || "—"))}
     </div>
-    <iframe class="doc-frame" src="/api/pdf/${encodeURIComponent(id)}" title="PDF preview"></iframe>
+    <iframe class="doc-frame" id="docFrame" title="PDF preview"></iframe>
     <details class="ai-details"><summary>Show AI details</summary>
       <p class="muted small">${esc(d.filing.reasoning)} · ${pct(d.filing.confidence)} confident · ${d.filing.filed_by === "human" ? "filed by a person" : "filed automatically"}</p>
       ${traceHtml(d.trace)}
     </details>`;
   $("#drawer").classList.add("wide");
   $("#drawer").classList.remove("hidden");
+  pdfUrl(id).then((u) => { const f = $("#docFrame"); if (f) f.src = u; }).catch((e) => toast(e.message, true));
 }
 
 // ---------- review ----------
@@ -364,7 +391,7 @@ function renderReview(items) {
           <div class="field"><div class="l">Account</div><div class="v">${c.account_last4 ? `••••${esc(c.account_last4)}` : "—"}</div></div>
           <div class="field"><div class="l">Agent confidence</div><div class="v">${pct(r.confidence ?? c.confidence)}</div></div>
         </div>` : ""}
-        <a href="/api/pdf/${encodeURIComponent(d.id)}" target="_blank">Open PDF</a>
+        <a href="#" data-pdf="${esc(d.id)}">Open PDF</a>
         <details style="margin-top:8px"><summary>Agent steps</summary>${traceHtml(d.trace)}</details>
       </div>
       <div class="review-actions">
@@ -469,7 +496,8 @@ async function runNow(rethrow = false) {
     if (rethrow) $("#liveStatus").textContent = `Sorting documents… ${Object.values(state?.docs || {}).filter((d) => d.status === "filed").length} filed so far`;
   };
   // Each worker keeps asking the server for the next item until nothing is left.
-  // The server hands every item to only one worker, so they never double up.
+  // The server picks a different waiting item for each worker; if two ever pick the same one,
+  // only the first result is saved, so nothing is filed twice.
   const worker = async (k) => {
     let waits = 0;
     while (!stop) {
@@ -611,6 +639,8 @@ $("#drawerClose").onclick = () => $("#drawer").classList.add("hidden");
 $("#drawer").onclick = (ev) => { if (ev.target.id === "drawer") $("#drawer").classList.add("hidden"); };
 
 document.addEventListener("click", (ev) => {
+  const pdfLink = ev.target.closest("[data-pdf]");
+  if (pdfLink) { ev.preventDefault(); return openPdf(pdfLink.dataset.pdf); }
   const tab = ev.target.closest("#inboxTabs .tab");
   if (tab) { inboxFilter = tab.dataset.filter; return render(); }
   const row = ev.target.closest("[data-email]");
@@ -627,6 +657,7 @@ $("#fileSearch").addEventListener("input", (ev) => { fileQuery = ev.target.value
 
 (async () => {
   updateLock();
+  if (!passcode) await askPasscode();
   directory = await api("directory").catch(() => []);
   await refresh();
   show();

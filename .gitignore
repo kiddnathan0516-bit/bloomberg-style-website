@@ -6,3 +6,6 @@ node_modules/
 .netlify/
 public/demo-pdfs/
 eval-results/
+__pycache__/
+*.pyc
+public/demo-emails.json

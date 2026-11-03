@@ -2,10 +2,13 @@
 // It "answers" using the answer key, so it proves the plumbing, NOT the AI's accuracy.
 import fs from "node:fs";
 import { setCreateOverride } from "../lib/llm.js";
-import { lookupSender } from "../lib/directory.js";
+import { lookupSender, PEOPLE } from "../lib/directory.js";
 
 const key = JSON.parse(fs.readFileSync("seed/data/answer-key.json", "utf8"));
 const emails = JSON.parse(fs.readFileSync("seed/data/emails.json", "utf8"));
+const scanById: Record<string, string> = Object.fromEntries(
+  fs.readdirSync("seed/data/pdfs").map((f) => [fs.readFileSync(`seed/data/pdfs/${f}`).toString("base64"), f.replace(".pdf", "")]),
+);
 
 export function installMockModel() {
 let n = 0;
@@ -21,7 +24,13 @@ const taskText = (p: any) => (typeof p.messages[0].content === "string" ? p.mess
     if (process.env.MOCK_DELAY_MS) await new Promise((r) => setTimeout(r, Number(process.env.MOCK_DELAY_MS)));
   const sys = Array.isArray(p.system) ? p.system[0].text : "";
   const turn = p.messages.filter((m: any) => m.role === "assistant").length;
-  if (!sys) return reply([{ type: "text", text: "COMMONWEALTH OF MASSACHUSETTS DRIVER'S LICENSE Name: SCANNED PERSON" }]); // OCR call
+  if (!sys) {
+    // OCR call: recognize which demo scan this is and "read" the name printed on it
+    const data = p.messages[0].content.find((c: any) => c.type === "document")?.source?.data ?? "";
+    const a = key.documents[scanById[data]];
+    const who = a?.person_id ? PEOPLE.find((x: any) => x.id === a.person_id) : null;
+    return reply([{ type: "text", text: who ? `SCANNED FORM  Name: ${who.first.toUpperCase()} ${who.last.toUpperCase()}` : "UNREADABLE SCAN" }]);
+  }
 
   if (sys.includes("Your role: Intake Agent")) {
     const from = /From: .*<(.+)>/.exec(taskText(p))![1];

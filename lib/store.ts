@@ -161,4 +161,9 @@ export async function resetState() {
   }
 }
 
+/** Read a single email or document record straight from storage. */
+export async function readRecord<T>(kind: "email" | "doc", id: string): Promise<T | null> {
+  return store().getJSON<T>((kind === "email" ? P.email : P.doc) + id);
+}
+
 export const pdfKey = (docId: string) => `pdf-${docId}`;

@@ -7,3 +7,20 @@
   node_bundler = "esbuild"
   # Lets the backend read the demo PDFs and JSON when you press "Load demo inbox".
   included_files = ["seed/data/**"]
+
+# Security headers for every page.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; frame-src blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+# Demo PDFs are downloaded by n8n, never shown as pages on this site's address.
+[[headers]]
+  for = "/demo-pdfs/*"
+  [headers.values]
+    Content-Security-Policy = "sandbox"
+    Content-Disposition = "attachment"

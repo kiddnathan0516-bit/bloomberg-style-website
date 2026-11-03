@@ -17,6 +17,11 @@ if (process.env.MOCK_LLM) (await import("./mock-model.js")).installMockModel();
 const handler = (await import("../netlify/functions/api.mjs")).default;
 const TYPES: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".pdf": "application/pdf", ".json": "application/json" };
 const PORT = Number(process.env.PORT || 8888);
+// Same security headers as netlify.toml, so local testing matches the live site.
+const SITE_HEADERS: Record<string, string> = {};
+const toml = fs.readFileSync("netlify.toml", "utf8");
+const block = toml.slice(toml.indexOf('for = "/*"'), toml.indexOf("[[headers]]", toml.indexOf('for = "/*"')));
+for (const m of block.matchAll(/^\s*([A-Za-z-]+) = "(.*)"$/gm)) SITE_HEADERS[m[1]] = m[2];
 
 http
   .createServer(async (req, res) => {
@@ -38,7 +43,7 @@ http
       res.writeHead(404).end("not found");
       return;
     }
-    res.writeHead(200, { "content-type": TYPES[path.extname(file)] || "application/octet-stream" });
+    res.writeHead(200, { ...SITE_HEADERS, "content-type": TYPES[path.extname(file)] || "application/octet-stream" });
     fs.createReadStream(file).pipe(res);
   })
   .listen(PORT, () => console.log(`RIA Doc Inbox running at http://localhost:${PORT}${process.env.MOCK_LLM ? " (MOCK model)" : ""}`));

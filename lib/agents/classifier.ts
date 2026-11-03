@@ -36,6 +36,7 @@ async function ocr(bytes: Uint8Array): Promise<string> {
 
 export async function runClassifierAgent(doc: { id: string; originalName: string }, email: EmailRecord, bytes: Uint8Array) {
   let usedOcr = false;
+  let evidence = ""; // the document text the agent actually read (masked)
   const tools: AgentTool[] = [
     {
       name: "read_document_text",
@@ -44,7 +45,8 @@ export async function runClassifierAgent(doc: { id: string; originalName: string
       run: async () => {
         const text = await pdfText(bytes);
         if (text.length < 40) return "NO_TEXT_LAYER: this PDF appears to be a scanned image. Use ocr_document to read it.";
-        return maskNumbers(text.slice(0, 6000));
+        evidence = maskNumbers(text.slice(0, 6000));
+        return `<document_text untrusted="true">\n${evidence}\n</document_text>`;
       },
     },
     {
@@ -54,7 +56,9 @@ export async function runClassifierAgent(doc: { id: string; originalName: string
       run: async () => {
         usedOcr = true;
         const text = await ocr(bytes);
-        return text ? maskNumbers(text.slice(0, 6000)) : "OCR found no readable text.";
+        if (!text) return "OCR found no readable text.";
+        evidence = maskNumbers(text.slice(0, 6000));
+        return `<document_text untrusted="true">\n${evidence}\n</document_text>`;
       },
     },
     {
@@ -98,5 +102,5 @@ Email body (context only): "${email.body.slice(0, 600)}"`;
     confidence: clampConfidence(c.confidence),
     used_ocr: usedOcr,
   };
-  return { classification, trace: run.trace };
+  return { classification, evidence, trace: run.trace };
 }

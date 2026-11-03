@@ -37,8 +37,30 @@ order, until it records a decision. The code runs the tools and enforces the rul
 **Domain customization:** `lib/policy.ts` holds the firm's document taxonomy, naming convention, folder
 rules, privacy rules, ambiguity rules and worked examples. Every agent's system prompt starts with it.
 
-**Parallel processing:** the website runs 5 agents at once. Each email and document is its own storage
-record and each worker owns a fixed share of the emails, so parallel work never overwrites itself.
+**Parallel processing:** the website runs up to 20 agents at once. Each email and document is its own
+storage record, so workers don't overwrite each other's records. A worker claims an item with a random
+token and re-reads it before starting; if two workers still pick the same item, only the first result is
+saved (a step only saves if the item is still in the step it expected), so a document is never filed twice.
+The cost of that rare case is some repeated AI work.
+
+## Security
+
+- **Everything needs the passcode** (`DEMO_PASSCODE`): viewing emails, documents and PDFs, and every button.
+  n8n uses a separate `INTAKE_SECRET`. If either setting is missing, the site refuses all requests.
+- **Wrong passcodes are limited:** after 10 wrong tries from one address in 15 minutes, all tries are refused
+  for a while. The passcode is kept only for the browser tab (sessionStorage).
+- **Untrusted content:** email and PDF text is treated as data, never as instructions, and a document can only
+  be auto-filed under a client if **its own text** shows that client's full name or one of their account
+  numbers (checked in code, `documentMentions` in `lib/guardrails.ts`).
+- **Masking:** email subjects and bodies, agent notes and log lines are stored with long digit runs masked to
+  the last 4 digits.
+- **Limits:** at most 10 PDFs per email, 8 MB each, real PDFs only; request bodies over 6 MB are refused.
+- **Headers:** a strict Content-Security-Policy and related headers (`netlify.toml`); PDFs are served as
+  downloads and previewed from an in-browser copy.
+- **Errors:** unexpected errors are logged on the server; the browser only sees a reference code.
+- **n8n:** the workflows don't save data from successful runs. The intake secret is still typed into the n8n
+  code steps, so anyone with access to the n8n workspace can read it; keep that workspace private, or move the
+  secret into an n8n credential.
 
 **Guardrails enforced in code (the AI can't skip them):** `lib/guardrails.ts`
 - Confidence below 0.80 can never auto-file. It always goes to the Review Queue.
@@ -65,8 +87,8 @@ record and each worker owns a fixed share of the emails, so parallel work never 
    | Key | Value |
    |---|---|
    | `ANTHROPIC_API_KEY` | your key from console.anthropic.com |
-   | `DEMO_PASSCODE` | any password you choose (protects the buttons that run the AI) |
-   | `INTAKE_SECRET` | any long random phrase (lets n8n send emails in) |
+   | `DEMO_PASSCODE` | a password you choose; needed to open the site and use any button |
+   | `INTAKE_SECRET` | a long random phrase (lets n8n send emails in); required |
    | `CLAUDE_MODEL` *(optional)* | defaults to `claude-opus-5-5` |
    | `N8N_DEMO_WEBHOOK_URL` *(optional)* | the live-demo workflow's webhook URL (see "One-click live demo") |
 3. Deploy, then open the site → **Enter passcode** → **Load demo inbox** → **Run now**.

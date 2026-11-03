@@ -6,12 +6,13 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import emailsJson from "../seed/data/emails.json" with { type: "json" };
 import demoList from "../seed/data/demo-emails.json" with { type: "json" };
-import { loadState, updateState, store, pdfKey, resetState } from "./store.js";
+import { loadState, updateState, store, pdfKey, resetState, readRecord } from "./store.js";
 import { runIntakeAgent, keywordRules } from "./agents/intake.js";
 import { runClassifierAgent } from "./agents/classifier.js";
 import { runFilingAgent, folderFor } from "./agents/filer.js";
 import { personById, fullName } from "./directory.js";
-import { FILENAME_RE } from "./guardrails.js";
+import { FILENAME_RE, maskNumbers } from "./guardrails.js";
+import { PublicError } from "./errors.js";
 import { llmReady } from "./llm.js";
 import type { AppState, Digest, DocRecord, EmailRecord, LogEntry } from "./types.js";
 
@@ -19,8 +20,14 @@ const now = () => new Date().toISOString();
 const MAX_ATTEMPTS = 2;
 
 function addLog(s: AppState, actor: string, message: string) {
-  s.log.push({ at: now(), actor, message } satisfies LogEntry);
+  s.log.push({ at: now(), actor, message: maskNumbers(message) } satisfies LogEntry);
 }
+
+// Limits on what an incoming email may contain (protects parsing time and AI cost).
+const MAX_PDFS = 10;
+const MAX_PDF_BYTES = 8 * 1024 * 1024;
+const MAX_BODY_CHARS = 20_000;
+const clip = (v: unknown, n: number) => String(v ?? "").slice(0, n);
 
 // ---------------------------------------------------------------------------
 // Getting emails in
@@ -40,24 +47,28 @@ export async function ingestEmail(input: IncomingEmail, source: "gmail" | "demo"
   if (input.messageId && Object.values(state.emails).some((e) => e.messageId === input.messageId)) {
     return { duplicate: true };
   }
+  if (!input.from || typeof input.from !== "string") throw new PublicError("Email is missing a sender");
   const n = Object.keys(state.emails).length + 1;
   const id = `M${String(n).padStart(3, "0")}-${Math.random().toString(36).slice(2, 6)}`;
-  const pdfs = (input.attachments ?? []).filter(
-    (a) => a.filename?.toLowerCase().endsWith(".pdf") || a.contentType === "application/pdf",
+  const pdfs = (Array.isArray(input.attachments) ? input.attachments : []).filter(
+    (a) => typeof a?.base64 === "string" && (String(a.filename).toLowerCase().endsWith(".pdf") || a.contentType === "application/pdf"),
   );
-  const attachments = pdfs.map((a, i) => ({ docId: `${id}-A${i + 1}`, filename: a.filename }));
-  for (const [i, a] of pdfs.entries()) {
-    await store().setBytes(pdfKey(attachments[i].docId), new Uint8Array(Buffer.from(a.base64, "base64")));
-  }
+  if (pdfs.length > MAX_PDFS) throw new PublicError(`Too many attachments (max ${MAX_PDFS})`, 413);
+  const files = pdfs.map((a) => new Uint8Array(Buffer.from(a.base64, "base64")));
+  if (files.some((f) => f.byteLength > MAX_PDF_BYTES)) throw new PublicError("Attachment too large (max 8 MB)", 413);
+  if (files.some((f) => Buffer.from(f.subarray(0, 5)).toString() !== "%PDF-")) throw new PublicError("Attachment is not a PDF", 415);
+  const attachments = pdfs.map((a, i) => ({ docId: `${id}-A${i + 1}`, filename: clip(a.filename, 150) }));
+  await Promise.all(files.map((f, i) => store().setBytes(pdfKey(attachments[i].docId), f)));
+  // Stored text is masked: no full account numbers ever reach the database.
   const email = newEmailRecord({
     id,
-    messageId: input.messageId,
+    messageId: clip(input.messageId, 300) || undefined,
     source,
-    from: input.from,
-    fromName: input.fromName || input.from,
-    subject: input.subject || "(no subject)",
-    body: input.body || "",
-    receivedAt: input.receivedAt || now(),
+    from: clip(input.from, 200),
+    fromName: clip(input.fromName || input.from, 200),
+    subject: maskNumbers(clip(input.subject || "(no subject)", 300)),
+    body: maskNumbers(clip(input.body, MAX_BODY_CHARS)),
+    receivedAt: clip(input.receivedAt, 40) || now(),
     attachments,
   });
   await updateState((s) => {
@@ -78,9 +89,11 @@ function newDoc(id: string, emailId: string, originalName: string): DocRecord {
 
 /** Loads the 25 fake demo emails and their PDFs. `readPdf` gets bytes for a seed doc id. */
 export async function loadDemoInbox(readPdf: (docId: string) => Promise<Uint8Array>) {
-  await resetState();
   const emails = emailsJson as Omit<EmailRecord, "status" | "ruleHits" | "trace" | "attempts" | "updatedAt" | "source">[];
-  for (const e of emails) for (const a of e.attachments) await store().setBytes(pdfKey(a.docId), await readPdf(a.docId));
+  const ids = emails.flatMap((e) => e.attachments.map((a) => a.docId));
+  const bytes = await Promise.all(ids.map((id) => readPdf(id))); // load first: a failure leaves the old data alone
+  await resetState();
+  await Promise.all(ids.map((id, i) => store().setBytes(pdfKey(id), bytes[i])));
   await updateState((s) => {
     for (const e of emails) {
       s.emails[e.id] = newEmailRecord({ ...e, source: "demo" });
@@ -96,7 +109,6 @@ export async function loadDemoInbox(readPdf: (docId: string) => Promise<Uint8Arr
  * as if they had just arrived from the clients, so the agents can start immediately.
  */
 export async function loadDemoEmails(readPdf: (docId: string) => Promise<Uint8Array>) {
-  await resetState();
   const seedEmails = emailsJson as { from: string; fromName: string; attachments: { docId: string }[] }[];
   const list = demoList as { pdf: string; file: string; subject: string; body: string }[];
   const t = Date.now();
@@ -118,7 +130,9 @@ export async function loadDemoEmails(readPdf: (docId: string) => Promise<Uint8Ar
       }),
     };
   });
-  await Promise.all(records.map(async (r) => store().setBytes(pdfKey(r.email.attachments[0].docId), await readPdf(r.pdf))));
+  const bytes = await Promise.all(records.map((r) => readPdf(r.pdf))); // load first: a failure leaves the old data alone
+  await resetState();
+  await Promise.all(records.map((r, i) => store().setBytes(pdfKey(r.email.attachments[0].docId), bytes[i])));
   await updateState((s) => {
     for (const { email } of records) {
       s.emails[email.id] = email;
@@ -164,8 +178,9 @@ const mine = (emailId: string, share: Share) => share.of <= 1 || owner(emailId, 
  * Pick the next item in this worker's share and "claim" it for 90 seconds, so that if
  * another caller (e.g. the n8n automation) runs at the same time it skips this item.
  */
-async function claimNext(share: Share): Promise<{ kind: "email" | "classify" | "file"; id: string } | null> {
+async function claimNext(share: Share): Promise<{ kind: "email" | "classify" | "file"; id: string } | null | "lost"> {
   let picked: { kind: "email" | "classify" | "file"; id: string } | null = null;
+  const token = Math.random().toString(36).slice(2, 12);
   await updateState((s) => {
     // Any waiting item, picked at random so parallel workers rarely reach for the same one.
     type Item = { kind: "email" | "classify" | "file"; rec: EmailRecord | DocRecord };
@@ -179,9 +194,16 @@ async function claimNext(share: Share): Promise<{ kind: "email" | "classify" | "
     if (!items.length) return;
     const pick = items[Math.floor(Math.random() * items.length)];
     pick.rec.claimedUntil = new Date(Date.now() + CLAIM_MS).toISOString();
+    pick.rec.claimedBy = token;
     picked = { kind: pick.kind, id: pick.rec.id };
   });
-  return picked;
+  if (!picked) return null;
+  // Two workers on different servers can claim the same item at the same moment; the
+  // later save wins. Re-read after a short pause: only the worker whose claim stuck goes on.
+  const p = picked as { kind: "email" | "classify" | "file"; id: string };
+  await new Promise((r) => setTimeout(r, 150));
+  const rec = await readRecord<EmailRecord | DocRecord>(p.kind === "email" ? "email" : "doc", p.id);
+  return rec?.claimedBy === token ? p : "lost";
 }
 
 function pendingInShare(s: AppState, share: Share) {
@@ -196,6 +218,7 @@ export async function workOnce(share: Share = ALL): Promise<{ did: string; remai
     return { did: "error: ANTHROPIC_API_KEY is not set. Add it in Netlify > Site configuration > Environment variables, then redeploy.", remaining };
   }
   const next = await claimNext(share);
+  if (next === "lost") return { did: "waiting for items another worker is processing", remaining: pendingCounts(await loadState()).total };
   if (!next) {
     const s = await loadState();
     const busy = pendingInShare(s, share);
@@ -216,6 +239,7 @@ async function failed(kind: "email" | "doc", id: string, actor: string, err: unk
     if (!rec) return;
     rec.attempts += 1;
     rec.claimedUntil = undefined;
+    rec.claimedBy = undefined;
     rec.trace.push({ agent: actor, kind: "error", text: msg, at: now() });
     if (rec.attempts >= MAX_ATTEMPTS) {
       rec.status = "error";
@@ -233,7 +257,8 @@ async function doIntake(email: EmailRecord) {
       const e = s.emails[email.id];
       if (!e || e.status !== "queued") return; // another worker already handled it
       e.claimedUntil = undefined;
-      e.intake = result;
+      e.claimedBy = undefined;
+      e.intake = { ...result, reasoning: maskNumbers(result.reasoning), sender_relationship: maskNumbers(result.sender_relationship) };
       e.trace.push(...trace);
       e.updatedAt = now();
       const docs = e.attachments.map((a) => s.docs[a.docId]).filter(Boolean);
@@ -247,7 +272,7 @@ async function doIntake(email: EmailRecord) {
         e.status = "needs_review";
         docs.forEach((d) => {
           d.status = "review";
-          d.review = { reason: `Intake Agent was unsure this email is client business: ${result.reasoning}`, suggested_household_id: result.household_id, suggested_person_id: null, suggested_filename: null, confidence: result.confidence };
+          d.review = { reason: maskNumbers(`Intake Agent was unsure this email is client business: ${result.reasoning}`), suggested_household_id: result.household_id, suggested_person_id: null, suggested_filename: null, confidence: result.confidence };
         });
       }
       const who = result.sender_person_id ? fullName(personById(result.sender_person_id)!) : "unknown sender";
@@ -263,12 +288,14 @@ async function doClassify(doc: DocRecord, s: AppState) {
   try {
     const bytes = await store().getBytes(pdfKey(doc.id));
     if (!bytes) throw new Error("PDF missing from storage");
-    const { classification, trace } = await runClassifierAgent(doc, s.emails[doc.emailId], bytes);
+    const { classification, evidence, trace } = await runClassifierAgent(doc, s.emails[doc.emailId], bytes);
     await updateState((st) => {
       const d = st.docs[doc.id];
       if (!d || d.status !== "to_classify") return; // another worker already handled it
       d.claimedUntil = undefined;
+      d.claimedBy = undefined;
       d.classification = classification;
+      d.evidence = evidence.slice(0, 6000);
       d.trace.push(...trace);
       d.status = "to_file";
       d.updatedAt = now();
@@ -282,21 +309,22 @@ async function doClassify(doc: DocRecord, s: AppState) {
 
 async function doFile(doc: DocRecord, s: AppState) {
   try {
-    const r = await runFilingAgent(doc, s.emails[doc.emailId], doc.classification!, s);
+    const r = await runFilingAgent(doc, s.emails[doc.emailId], doc.classification!, s, doc.evidence ?? "");
     await updateState((st) => {
       const d = st.docs[doc.id];
       if (!d || d.status !== "to_file") return; // another worker already handled it: never file twice
       d.claimedUntil = undefined;
+      d.claimedBy = undefined;
       d.trace.push(...r.trace);
       d.updatedAt = now();
       if (r.outcome === "filed") {
         d.status = "filed";
-        d.filing = r.filing;
+        d.filing = { ...r.filing, reasoning: maskNumbers(r.filing.reasoning) };
         if (!st.folders.includes(r.filing.folder)) st.folders.push(r.filing.folder);
         addLog(st, "Filing Agent", `Filed ${doc.id} as ${r.filing.folder}/${r.filing.filename} (conf ${r.filing.confidence.toFixed(2)})`);
       } else {
         d.status = "review";
-        d.review = r.review;
+        d.review = { ...r.review, reason: maskNumbers(r.review.reason) };
         addLog(st, "Filing Agent", `Sent ${doc.id} to Review Queue: ${r.review.reason}`);
       }
       refreshEmailStatus(st, d.emailId);
@@ -327,14 +355,14 @@ export async function reviewAction(
   let message = "";
   await updateState((s) => {
     const d = s.docs[docId];
-    if (!d) throw new Error(`No document ${docId}`);
+    if (!d) throw new PublicError(`No document ${docId}`, 404);
     if (action === "reject") {
       d.status = "rejected";
       message = `Rejected ${docId} (not filed)`;
     } else if (action === "release") {
       // A person confirmed the sender is legitimate: hand the document back to the
       // Classifier and Filing agents. The confidence rules still apply to them.
-      if (d.classification) throw new Error("This document was already classified. Approve or reject it instead.");
+      if (d.classification) throw new PublicError("This document was already classified. Approve or reject it instead.");
       const e = s.emails[d.emailId];
       d.status = "to_classify";
       d.review = undefined;
@@ -353,14 +381,14 @@ export async function reviewAction(
     } else {
       const personId = action === "edit" ? edit?.person_id : d.review?.suggested_person_id;
       const p = personById(personId);
-      if (!p) throw new Error("Pick a client before approving.");
-      if (!d.classification) throw new Error("Document was never classified; reject it or re-run.");
+      if (!p) throw new PublicError("Pick a client before approving.");
+      if (!d.classification) throw new PublicError("Document was never classified; reject it or re-run.");
       const c = d.classification;
       const filename =
         (action === "edit" && edit?.filename) ||
         (d.review?.suggested_filename && d.review.suggested_person_id === p.id ? d.review.suggested_filename : null) ||
         `${c.date}_${p.last.replace(/[^A-Za-z]/g, "")}-${p.first.replace(/[^A-Za-z]/g, "")}_${c.source}_${c.doc_type}.pdf`;
-      if (!FILENAME_RE.test(filename)) throw new Error(`Filename "${filename}" doesn't follow the naming convention.`);
+      if (!FILENAME_RE.test(filename)) throw new PublicError(`Filename "${filename}" doesn't follow the naming convention.`);
       const folder = folderFor(p.household_id, p.id, c.doc_type);
       if (!s.folders.includes(folder)) s.folders.push(folder);
       d.status = "filed";
