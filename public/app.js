@@ -245,12 +245,12 @@ const FOLDER_ORDER = ["Statements", "Tax Documents", "Financial Statements", "In
 const monthLabel = (ym) => { const [y, m] = (ym || "").split("-"); return y && m ? new Date(+y, +m - 1, 1).toLocaleDateString([], { month: "short", year: "numeric" }) : "—"; };
 const shortHH = (name) => (name || "").replace(/ Household$/, "");
 
-function fileRow(d, who = "") {
+function fileRow(d, who = "", showTag = true) {
   const folder = d.filing.folder.split("/")[2];
   return `<div class="file-row" data-doc="${esc(d.id)}">
     <span class="pdf big">PDF</span>
     <div class="fr-name">${who ? `<div class="fr-who">${esc(who)}</div>` : ""}<div class="fr-file">${esc(d.filing.filename)}</div><div class="fr-orig">${esc(d.originalName)}</div></div>
-    <span class="tag">${esc(folder)}</span>
+    ${showTag ? `<span class="tag">${esc(folder)}</span>` : ""}
     <span class="fr-meta">${monthLabel(d.classification?.date)}</span>
     <span class="fr-by">${d.filing.filed_by === "human" ? "Person" : "Auto"}</span>
   </div>`;
@@ -258,6 +258,17 @@ function fileRow(d, who = "") {
 const byFolder = (a, b) =>
   FOLDER_ORDER.indexOf(a.filing.folder.split("/")[2]) - FOLDER_ORDER.indexOf(b.filing.folder.split("/")[2]) ||
   (b.classification?.date || "").localeCompare(a.classification?.date || "");
+
+// Group one person's documents into their sections (folders), in the firm's folder order.
+function sections(docs) {
+  const groups = new Map();
+  for (const d of docs) {
+    const f = d.filing.folder.split("/")[2];
+    if (!groups.has(f)) groups.set(f, []);
+    groups.get(f).push(d);
+  }
+  return [...groups.entries()];
+}
 
 function renderFiles(filed) {
   const count = (hh) => filed.filter((d) => d.filing.household_id === hh).length;
@@ -294,7 +305,9 @@ function renderFiles(filed) {
           <b>${esc(m.first)} ${esc(m.last)}</b><span class="muted">${esc(m.role)}</span>
           <span class="muted push">${docs.length} document${docs.length === 1 ? "" : "s"}</span>
         </div>
-        ${docs.map((d) => fileRow(d)).join("")}
+        ${sections(docs).map(([folder, list]) => `
+          <div class="section-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg><b>${esc(folder)}</b><span>${list.length}</span></div>
+          ${list.map((d) => fileRow(d, "", false)).join("")}`).join("")}
       </div>`).join("")}`;
 }
 
