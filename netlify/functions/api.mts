@@ -41,6 +41,29 @@ export default async (req: Request) => {
       const s = await loadState();
       return json({ ...s, pending: pendingCounts(s), model: MODEL, passcodeRequired: !!process.env.DEMO_PASSCODE });
     }
+    if (method === "GET" && route === "health") {
+      // Open /api/health in a browser to check the setup. Never shows the secret values themselves.
+      const check = async (fn: () => Promise<unknown>) => {
+        try {
+          await fn();
+          return "OK";
+        } catch (err) {
+          return `PROBLEM: ${err instanceof Error ? err.message : String(err)}`;
+        }
+      };
+      return json({
+        storage_write_and_read: await check(async () => {
+          await store().setBytes("health-check", new Uint8Array([1, 2, 3]));
+          const back = await store().getBytes("health-check");
+          if (back?.length !== 3) throw new Error("wrote a test file but could not read it back");
+        }),
+        saved_data_readable: await check(() => loadState()),
+        ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY ? "set" : "MISSING - add it in Netlify, then redeploy",
+        DEMO_PASSCODE: process.env.DEMO_PASSCODE ? "set" : "MISSING - add it in Netlify, then redeploy",
+        INTAKE_SECRET: process.env.INTAKE_SECRET ? "set" : "MISSING - add it in Netlify, then redeploy",
+        model: MODEL,
+      });
+    }
     if (method === "GET" && route === "directory") return json(HOUSEHOLDS);
     if (method === "GET" && route === "eval") return json(evaluate(await loadState()));
     if (method === "GET" && route.startsWith("pdf/")) {

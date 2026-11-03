@@ -3,59 +3,114 @@
   "nodes": [
     {
       "parameters": {
-        "pollTimes": { "item": [{ "mode": "everyX", "value": 5, "unit": "minutes" }] },
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyX",
+              "value": 5,
+              "unit": "minutes"
+            }
+          ]
+        },
         "simple": false,
         "filters": {},
-        "options": { "downloadAttachments": true }
+        "options": {
+          "downloadAttachments": true
+        }
       },
       "id": "a1f0c6c2-0001-4c1e-9a10-000000000001",
       "name": "1. Gmail Trigger (new emails, every 5 min)",
       "type": "n8n-nodes-base.gmailTrigger",
       "typeVersion": 1.2,
-      "position": [0, 0]
+      "position": [
+        0,
+        0
+      ]
     },
     {
       "parameters": {
-        "jsCode": "// STEP 2: send each new email + its PDF attachments to the Netlify app.\n// >>> EDIT THESE TWO LINES <<<\nconst SITE_URL = 'https://YOUR-SITE.netlify.app';\nconst INTAKE_SECRET = 'PASTE-YOUR-INTAKE_SECRET-HERE';\n\nconst results = [];\nconst items = $input.all();\nfor (let i = 0; i < items.length; i++) {\n  const mail = items[i].json;\n  const attachments = [];\n  for (const key of Object.keys(items[i].binary || {})) {\n    const meta = items[i].binary[key];\n    const isPdf = (meta.mimeType || '').includes('pdf') || (meta.fileName || '').toLowerCase().endsWith('.pdf');\n    if (!isPdf) continue;\n    const buf = await this.helpers.getBinaryDataBuffer(i, key);\n    attachments.push({ filename: meta.fileName || `${key}.pdf`, contentType: 'application/pdf', base64: buf.toString('base64') });\n  }\n  const from = mail.from?.value?.[0] || {};\n  const payload = {\n    messageId: mail.messageId || mail.id,\n    from: from.address || mail.from?.text || 'unknown',\n    fromName: from.name || from.address || '',\n    subject: mail.subject || '',\n    body: (mail.text || '').slice(0, 8000),\n    receivedAt: mail.date || new Date().toISOString(),\n    attachments,\n  };\n  const res = await this.helpers.httpRequest({\n    method: 'POST', url: `${SITE_URL}/api/intake`, json: true, body: payload,\n    headers: { 'x-intake-secret': INTAKE_SECRET }, timeout: 60000,\n  });\n  results.push({ json: { subject: payload.subject, from: payload.from, pdfs: attachments.length, result: res } });\n}\nreturn results.length ? results : [{ json: { note: 'no new emails' } }];"
+        "jsCode": "// STEP 2: send each new email + its PDF attachments to the Netlify app.\n// >>> EDIT THESE TWO LINES <<<\nconst SITE_URL = 'https://YOUR-SITE.netlify.app';\nconst INTAKE_SECRET = 'PASTE-YOUR-INTAKE_SECRET-HERE';\n\nconst results = [];\nconst items = $input.all();\nfor (let i = 0; i < items.length; i++) {\n  const mail = items[i].json;\n  const attachments = [];\n  for (const key of Object.keys(items[i].binary || {})) {\n    const meta = items[i].binary[key];\n    const isPdf = (meta.mimeType || '').includes('pdf') || (meta.fileName || '').toLowerCase().endsWith('.pdf');\n    if (!isPdf) continue;\n    const buf = await this.helpers.getBinaryDataBuffer(i, key);\n    attachments.push({ filename: meta.fileName || `${key}.pdf`, contentType: 'application/pdf', base64: buf.toString('base64') });\n  }\n  const from = mail.from?.value?.[0] || {};\n  const payload = {\n    messageId: mail.messageId || mail.id,\n    from: from.address || mail.from?.text || 'unknown',\n    fromName: from.name || from.address || '',\n    subject: mail.subject || '',\n    body: (mail.text || '').slice(0, 8000),\n    receivedAt: mail.date || new Date().toISOString(),\n    attachments,\n  };\n  const full = await this.helpers.httpRequest({\n    method: 'POST', url: `${SITE_URL}/api/intake`, json: true, body: payload,\n    headers: { 'x-intake-secret': INTAKE_SECRET }, timeout: 60000,\n    returnFullResponse: true, ignoreHttpStatusErrors: true,\n  });\n  if (full.statusCode >= 400) {\n    throw new Error(`Website said ${full.statusCode}: ${JSON.stringify(full.body).slice(0, 500)}`);\n  }\n  const res = full.body;\n  results.push({ json: { subject: payload.subject, from: payload.from, pdfs: attachments.length, result: res } });\n}\nreturn results.length ? results : [{ json: { note: 'no new emails' } }];"
       },
       "id": "a1f0c6c2-0002-4c1e-9a10-000000000002",
       "name": "2. Send emails + PDFs to Netlify",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [260, 0]
+      "position": [
+        260,
+        0
+      ]
     },
     {
       "parameters": {
-        "rule": { "interval": [{ "field": "minutes", "minutesInterval": 5 }] }
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
       },
       "id": "a1f0c6c2-0003-4c1e-9a10-000000000003",
       "name": "Every 5 min (finish any leftover work)",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [260, 220]
+      "position": [
+        260,
+        220
+      ]
     },
     {
       "parameters": {
-        "jsCode": "// STEPS 3 + 4: run the AI agents on everything in the queue, then write the ops digest.\n// >>> EDIT THESE TWO LINES (same values as step 2) <<<\nconst SITE_URL = 'https://YOUR-SITE.netlify.app';\nconst INTAKE_SECRET = 'PASTE-YOUR-INTAKE_SECRET-HERE';\n\nconst call = (path) => this.helpers.httpRequest({\n  method: 'POST', url: `${SITE_URL}/api/${path}`, json: true, body: {},\n  headers: { 'x-intake-secret': INTAKE_SECRET }, timeout: 65000,\n});\nconst started = Date.now();\nconst done = [];\nwhile (Date.now() - started < 4 * 60 * 1000) {   // stop after 4 minutes; the next run continues\n  const r = await call('work');\n  if (r.did === 'idle') break;\n  if (r.did.startsWith('error:')) { done.push(r.did); break; }\n  if (r.did.startsWith('waiting')) { await new Promise((res) => setTimeout(res, 3000)); continue; }\n  done.push(r.did);\n}\nlet digest = null;\nif (done.length) digest = await call('digest');\nreturn [{ json: { agentRuns: done.length, steps: done, digest } }];"
+        "jsCode": "// STEPS 3 + 4: run the AI agents on everything in the queue, then write the ops digest.\n// >>> EDIT THESE TWO LINES (same values as step 2) <<<\nconst SITE_URL = 'https://YOUR-SITE.netlify.app';\nconst INTAKE_SECRET = 'PASTE-YOUR-INTAKE_SECRET-HERE';\n\nconst call = async (path) => {\n  const full = await this.helpers.httpRequest({\n    method: 'POST', url: `${SITE_URL}/api/${path}`, json: true, body: {},\n    headers: { 'x-intake-secret': INTAKE_SECRET }, timeout: 65000,\n    returnFullResponse: true, ignoreHttpStatusErrors: true,\n  });\n  if (full.statusCode >= 400) {\n    throw new Error(`Website said ${full.statusCode}: ${JSON.stringify(full.body).slice(0, 500)}`);\n  }\n  return full.body;\n};\nconst started = Date.now();\nconst done = [];\nwhile (Date.now() - started < 4 * 60 * 1000) {   // stop after 4 minutes; the next run continues\n  const r = await call('work');\n  if (r.did === 'idle') break;\n  if (r.did.startsWith('error:')) { done.push(r.did); break; }\n  if (r.did.startsWith('waiting')) { await new Promise((res) => setTimeout(res, 3000)); continue; }\n  done.push(r.did);\n}\nlet digest = null;\nif (done.length) digest = await call('digest');\nreturn [{ json: { agentRuns: done.length, steps: done, digest } }];"
       },
       "id": "a1f0c6c2-0004-4c1e-9a10-000000000004",
       "name": "3+4. Run agents, then write digest",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [520, 0]
+      "position": [
+        520,
+        0
+      ]
     }
   ],
   "connections": {
     "1. Gmail Trigger (new emails, every 5 min)": {
-      "main": [[{ "node": "2. Send emails + PDFs to Netlify", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "2. Send emails + PDFs to Netlify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "2. Send emails + PDFs to Netlify": {
-      "main": [[{ "node": "3+4. Run agents, then write digest", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "3+4. Run agents, then write digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Every 5 min (finish any leftover work)": {
-      "main": [[{ "node": "3+4. Run agents, then write digest", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "3+4. Run agents, then write digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "settings": { "executionOrder": "v1" },
+  "settings": {
+    "executionOrder": "v1"
+  },
   "pinData": {}
 }
