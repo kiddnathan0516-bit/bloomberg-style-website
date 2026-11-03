@@ -100,6 +100,30 @@
     "E25": {
       "expected": "ignore",
       "note": "Follow-up only, no document"
+    },
+    "E26": {
+      "expected": "process",
+      "note": ""
+    },
+    "E27": {
+      "expected": "process",
+      "note": ""
+    },
+    "E28": {
+      "expected": "process",
+      "note": ""
+    },
+    "E29": {
+      "expected": "process",
+      "note": ""
+    },
+    "E30": {
+      "expected": "process",
+      "note": ""
+    },
+    "E31": {
+      "expected": "process",
+      "note": ""
     }
   },
   "documents": {
@@ -401,6 +425,97 @@
       "expected_filename": "2026-09_Chen-David_NorthwindLife_Insurance.pdf",
       "expected_folder": "HH-CHEN/P-DCHEN/Insurance",
       "note": ""
+    },
+    "D24": {
+      "doc_id": "D24",
+      "attachment_filename": "Fidelity Q3 2026 statement.pdf",
+      "expected_outcome": "file",
+      "household_id": "HH-RODRIGUEZ",
+      "person_id": "P-CRODRIGUEZ",
+      "doc_type": "Statement",
+      "source": "Fidelity",
+      "date": "2026-09",
+      "expected_filename": "2026-09_Rodriguez-Carlos_Fidelity_Statement.pdf",
+      "expected_folder": "HH-RODRIGUEZ/P-CRODRIGUEZ/Statements",
+      "note": "Realistic 4-page brokerage statement"
+    },
+    "D25": {
+      "doc_id": "D25",
+      "attachment_filename": "Smith personal balance sheet.pdf",
+      "expected_outcome": "file",
+      "household_id": "HH-SMITH",
+      "person_id": "P-LSMITH",
+      "doc_type": "Financials",
+      "source": "Client",
+      "date": "2026-09",
+      "expected_filename": "2026-09_Smith-Linda_Client_Financials.pdf",
+      "expected_folder": "HH-SMITH/P-LSMITH/Financial Statements",
+      "note": "Client-prepared balance sheet naming both spouses; first-named is Linda"
+    },
+    "D26": {
+      "doc_id": "D26",
+      "attachment_filename": "Smith income statement 2025.pdf",
+      "expected_outcome": "file",
+      "household_id": "HH-SMITH",
+      "person_id": "P-LSMITH",
+      "doc_type": "Financials",
+      "source": "Client",
+      "date": "2025-12",
+      "expected_filename": "2025-12_Smith-Linda_Client_Financials.pdf",
+      "expected_folder": "HH-SMITH/P-LSMITH/Financial Statements",
+      "note": "Client-prepared household income statement"
+    },
+    "D27": {
+      "doc_id": "D27",
+      "attachment_filename": "Northwind annual policy report.pdf",
+      "expected_outcome": "file",
+      "household_id": "HH-NGUYEN",
+      "person_id": "P-TNGUYEN",
+      "doc_type": "Insurance",
+      "source": "NorthwindLife",
+      "date": "2026-10",
+      "expected_filename": "2026-10_Nguyen-Thomas_NorthwindLife_Insurance.pdf",
+      "expected_folder": "HH-NGUYEN/P-TNGUYEN/Insurance",
+      "note": "Realistic 2-page universal life annual report"
+    },
+    "D28": {
+      "doc_id": "D28",
+      "attachment_filename": "OBrien Trust certification.pdf",
+      "expected_outcome": "file",
+      "household_id": "HH-OBRIEN",
+      "person_id": "P-KOBRIEN",
+      "doc_type": "Trust",
+      "source": "Attorney",
+      "date": "2026-10",
+      "expected_filename": "2026-10_OBrien-Kathleen_Attorney_Trust.pdf",
+      "expected_folder": "HH-OBRIEN/P-KOBRIEN/Trust Documents",
+      "note": "Certification of trust; first-named trustee is Kathleen"
+    },
+    "D29": {
+      "doc_id": "D29",
+      "attachment_filename": "Pension statement 2026.pdf",
+      "expected_outcome": "file",
+      "household_id": "HH-JOHNSON",
+      "person_id": "P-MJOHNSON",
+      "doc_type": "Pension",
+      "source": "Employer",
+      "date": "2026-09",
+      "expected_filename": "2026-09_Johnson-Mark_Employer_Pension.pdf",
+      "expected_folder": "HH-JOHNSON/P-MJOHNSON/Pension Statements",
+      "note": "Defined benefit pension statement"
+    },
+    "D30": {
+      "doc_id": "D30",
+      "attachment_filename": "Harbor Point new client profile - signed.pdf",
+      "expected_outcome": "file",
+      "household_id": "HH-PATEL-A",
+      "person_id": "P-APATEL",
+      "doc_type": "Onboarding",
+      "source": "HarborPoint",
+      "date": "2026-10",
+      "expected_filename": "2026-10_Patel-Anil_HarborPoint_Onboarding.pdf",
+      "expected_folder": "HH-PATEL-A/P-APATEL/Onboarding",
+      "note": "New-client onboarding profile"
     }
   }
 }

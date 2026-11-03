@@ -12,6 +12,10 @@ export const FOLDER_FOR_TYPE: Record<string, string> = {
   ID: "Identification",
   Insurance: "Insurance",
   Beneficiary: "Beneficiary Forms",
+  Financials: "Financial Statements",
+  Trust: "Trust Documents",
+  Pension: "Pension Statements",
+  Onboarding: "Onboarding",
   Other: "Other",
 };
 
@@ -32,18 +36,26 @@ is a small cost. A document filed under the wrong client is a serious compliance
 | ID          | Identification         | Driver's license, passport, state ID |
 | Insurance   | Insurance              | Life / disability / LTC policy statements and illustrations |
 | Beneficiary | Beneficiary Forms      | Beneficiary designation or change forms |
+| Financials  | Financial Statements   | Client's personal balance sheet / net worth statement, household or business income statement |
+| Trust       | Trust Documents        | Trust agreements, amendments, certifications of trust |
+| Pension     | Pension Statements     | Defined benefit pension / annuity benefit statements from an employer plan |
+| Onboarding  | Onboarding             | The firm's new-client profile / intake forms and acknowledgments (not custodian account applications) |
 | Other       | Other                  | Client document that fits none of the above |
 
 ## Source (who issued the document)
 Use exactly one of: Schwab, Fidelity, Vanguard, Pershing, NorthwindLife, HarborPoint (the firm's own
-forms), DMV (any government-issued ID), Other. For a rollover/transfer form, the source is the custodian
+forms), DMV (any government-issued ID), Client (prepared by the client or their CPA, e.g. a personal
+balance sheet), Attorney (prepared by a law firm, e.g. trust documents), Employer (an employer's pension
+or benefit plan), Other. For a rollover/transfer form, the source is the custodian
 whose form it is (usually the receiving custodian printed in the header).
 
 ## Date rule (YYYY-MM)
 - Statement: the month the statement period ENDS (period Jul 1 - Sep 30, 2026 -> 2026-09).
 - 1099 / tax forms: the TAX YEAR followed by -12 (tax year 2025 -> 2025-12).
 - Forms (applications, rollovers, beneficiary, risk questionnaire): the month it was signed/dated.
-- ID: the issue date. Insurance: the statement date.
+- ID: the issue date. Insurance: the statement/report date. Pension: the "as of" date.
+- Financials: the "as of" date for a balance sheet; the period END for an income statement (year 2025 -> 2025-12).
+- Trust: the date the trust document or certification was signed/executed (not the original trust date).
 
 ## Naming convention
 YYYY-MM_Last-First_Source_DocType.pdf

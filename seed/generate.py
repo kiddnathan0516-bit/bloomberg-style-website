@@ -21,6 +21,8 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
+import realistic
+
 random.seed(42)
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "data")
@@ -266,7 +268,8 @@ def acct_for(pid, custodian):
 FOLDER = {
     "Statement": "Statements", "1099": "Tax Documents", "Rollover": "Rollovers & Transfers",
     "AcctApp": "Account Applications", "RiskQ": "Risk Questionnaires", "ID": "Identification",
-    "Insurance": "Insurance", "Beneficiary": "Beneficiary Forms",
+    "Insurance": "Insurance", "Beneficiary": "Beneficiary Forms", "Financials": "Financial Statements",
+    "Trust": "Trust Documents", "Pension": "Pension Statements", "Onboarding": "Onboarding",
 }
 
 
@@ -392,6 +395,34 @@ form_pdf(p, "Annual Policy Statement", "NorthwindLife", ["Term life policy annua
          [("Insured", "David Chen"), ("Policy number", "NWL-40551"), ("Statement date", "09/30/2026"),
           ("Death benefit", "$1,500,000"), ("Premium", "$1,140.00 / year")], "09/30/2026")
 
+# --- realistic multi-page documents (styled like real custodian / insurer / plan paperwork) ---
+carlos = PEOPLE["P-CRODRIGUEZ"]
+p = add_doc("D24", "Fidelity Q3 2026 statement.pdf", "P-CRODRIGUEZ", "Statement", "Fidelity", "2026-09",
+            note="Realistic 4-page brokerage statement")
+realistic.brokerage_statement(p, "CARLOS RODRIGUEZ", ["77 Mission Rd", "Worcester, MA 01602"], "Fidelity Brokerage Services LLC",
+                              "Individual - TOD", "Z41-735561", "July 1 - September 30, 2026", "2026-09-30")
+p = add_doc("D25", "Smith personal balance sheet.pdf", "P-LSMITH", "Financials", "Client", "2026-09",
+            note="Client-prepared balance sheet naming both spouses; first-named is Linda")
+realistic.balance_sheet(p, "Linda M. Smith and John W. Smith", "September 30, 2026")
+p = add_doc("D26", "Smith income statement 2025.pdf", "P-LSMITH", "Financials", "Client", "2025-12",
+            note="Client-prepared household income statement")
+realistic.income_statement(p, "Linda M. Smith and John W. Smith", 2025)
+p = add_doc("D27", "Northwind annual policy report.pdf", "P-TNGUYEN", "Insurance", "NorthwindLife", "2026-10",
+            note="Realistic 2-page universal life annual report")
+realistic.insurance_report(p, "Thomas Nguyen", "402 Lake Shore Dr, Nashua, NH 03060", "NWL-UL-0442981", "October 5, 2026",
+                           "Anna Nguyen (spouse) 100%")
+p = add_doc("D28", "OBrien Trust certification.pdf", "P-KOBRIEN", "Trust", "Attorney", "2026-10",
+            note="Certification of trust; first-named trustee is Kathleen")
+realistic.trust_certification(p, "O'Brien Family Revocable Trust", "March 4, 2019", "Kathleen O'Brien and Sean O'Brien",
+                              "Kathleen O'Brien and Sean O'Brien", "Margaret O'Brien-Hale", "October 20, 2026")
+p = add_doc("D29", "Pension statement 2026.pdf", "P-MJOHNSON", "Pension", "Employer", "2026-09",
+            note="Defined benefit pension statement")
+realistic.pension_statement(p, "Mark Johnson", "5 Quarry Hill, Burlington, VT 05401", "Green Mountain Pension Plan",
+                            "September 30, 2026")
+p = add_doc("D30", "Harbor Point new client profile - signed.pdf", "P-APATEL", "Onboarding", "HarborPoint", "2026-10",
+            note="New-client onboarding profile")
+realistic.onboarding_profile(p, "Anil Patel", "anil.patel@example.net", "301 Grove St, Jersey City, NJ 07302", "10/30/2026")
+
 # distractor attachments (should never be filed)
 spam_pdf = os.path.join(PDF_DIR, "X01.pdf")
 form_pdf(spam_pdf, "INVOICE #88-2231", "HarborPoint", ["PAYMENT OVERDUE. Click link to avoid account suspension."],
@@ -481,6 +512,23 @@ email("E24", "events@harborpoint-webinars.example.com", "Webinar Team", "You're 
 email("E25", "sean.obrien@example.com", "Sean O'Brien", "did you get it?",
       "Just checking you got the rollover form I sent the other day?\nSean", [], "ignore", t("11-02", "09:12"),
       "Follow-up only, no document")
+
+# realistic documents
+email("E26", "carlos.rodriguez@example.com", "Carlos Rodriguez", "Q3 statement",
+      "Hi team,\n\nAttached is my Fidelity statement for the third quarter.\n\nThanks,\nCarlos", [att("D24")], "process", t("11-02", "10:05"))
+email("E27", "linda.smith@example.com", "Linda Smith", "Our financials for the planning meeting",
+      "Hi,\n\nAhead of our planning meeting, attached are our personal balance sheet and last year's household income statement.\n\nBest,\nLinda",
+      [att("D25"), att("D26")], "process", t("11-02", "10:40"))
+email("E28", "thomas.nguyen@example.com", "Thomas Nguyen", "Life insurance annual report",
+      "Hello,\n\nNorthwind sent my annual policy report. Attached for your files.\n\nThomas", [att("D27")], "process", t("11-02", "11:15"))
+email("E29", "kathleen.obrien@example.com", "Kathleen O'Brien", "Trust certification",
+      "Hi,\n\nOur attorney prepared the certification of trust you asked for so we can retitle the accounts. Attached.\n\nKathleen",
+      [att("D28")], "process", t("11-02", "13:20"))
+email("E30", "mark.johnson@example.com", "Mark Johnson", "Pension statement",
+      "Attached is my pension statement from work.\n\nMark", [att("D29")], "process", t("11-02", "14:05"))
+email("E31", "anil.patel@example.net", "Anil Patel", "Signed new client profile",
+      "Hello,\n\nPlease find my completed and signed new client profile attached. Looking forward to working together.\n\nAnil Patel",
+      [att("D30")], "process", t("11-02", "15:30"))
 
 # ---------------------------------------------------------------------------
 # 5. Write files

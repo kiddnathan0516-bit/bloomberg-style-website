@@ -11,7 +11,10 @@ export type DocStatus =
   | "skipped" // attachment of an ignored email
   | "error";
 
-export const DOC_TYPES = ["Statement", "1099", "Rollover", "AcctApp", "RiskQ", "ID", "Insurance", "Beneficiary", "Other"] as const;
+export const DOC_TYPES = [
+  "Statement", "1099", "Rollover", "AcctApp", "RiskQ", "ID", "Insurance", "Beneficiary",
+  "Financials", "Trust", "Pension", "Onboarding", "Other",
+] as const;
 export type DocType = (typeof DOC_TYPES)[number];
 
 export interface TraceStep {

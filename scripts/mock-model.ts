@@ -28,7 +28,7 @@ const taskText = (p: any) => (typeof p.messages[0].content === "string" ? p.mess
       emails.find((x: any) => x.from === from && taskText(p).includes(`Subject: ${x.subject}\n`)) ??
       emails.find((x: any) => taskText(p).includes(`Subject: ${x.subject}\n`)); // re-sent through Gmail
     if (turn === 0) return reply([use("lookup_sender", { email: from })]);
-    const exp = key.emails[e.id].expected;
+    const exp = e ? key.emails[e.id].expected : "process"; // unknown subject (e.g. a re-worded demo email)
     const s: any = lookupSender(from);
     return reply([use("finish_intake", {
       decision: exp === "ignore" ? "ignore" : "process", category: exp === "ignore" ? "other" : "client_documents",

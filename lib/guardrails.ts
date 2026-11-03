@@ -16,7 +16,7 @@ export function last4Only(value: string | null | undefined): string | null {
   return digits.length >= 4 ? digits.slice(-4) : null;
 }
 
-export const FILENAME_RE = /^\d{4}-(0[1-9]|1[0-2])_[A-Za-z]+-[A-Za-z]+_[A-Za-z]+_(Statement|1099|Rollover|AcctApp|RiskQ|ID|Insurance|Beneficiary|Other)(_\d+)?\.pdf$/;
+export const FILENAME_RE = /^\d{4}-(0[1-9]|1[0-2])_[A-Za-z]+-[A-Za-z]+_[A-Za-z]+_(Statement|1099|Rollover|AcctApp|RiskQ|ID|Insurance|Beneficiary|Financials|Trust|Pension|Onboarding|Other)(_\d+)?\.pdf$/;
 
 export function clampConfidence(c: number) {
   return Number.isFinite(c) ? Math.max(0, Math.min(1, c)) : 0;

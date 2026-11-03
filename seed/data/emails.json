@@ -345,5 +345,93 @@
     "body": "Just checking you got the rollover form I sent the other day?\nSean",
     "receivedAt": "2026-11-02T09:12:00-04:00",
     "attachments": []
+  },
+  {
+    "id": "E26",
+    "from": "carlos.rodriguez@example.com",
+    "fromName": "Carlos Rodriguez",
+    "subject": "Q3 statement",
+    "body": "Hi team,\n\nAttached is my Fidelity statement for the third quarter.\n\nThanks,\nCarlos",
+    "receivedAt": "2026-11-02T10:05:00-04:00",
+    "attachments": [
+      {
+        "docId": "D24",
+        "filename": "Fidelity Q3 2026 statement.pdf"
+      }
+    ]
+  },
+  {
+    "id": "E27",
+    "from": "linda.smith@example.com",
+    "fromName": "Linda Smith",
+    "subject": "Our financials for the planning meeting",
+    "body": "Hi,\n\nAhead of our planning meeting, attached are our personal balance sheet and last year's household income statement.\n\nBest,\nLinda",
+    "receivedAt": "2026-11-02T10:40:00-04:00",
+    "attachments": [
+      {
+        "docId": "D25",
+        "filename": "Smith personal balance sheet.pdf"
+      },
+      {
+        "docId": "D26",
+        "filename": "Smith income statement 2025.pdf"
+      }
+    ]
+  },
+  {
+    "id": "E28",
+    "from": "thomas.nguyen@example.com",
+    "fromName": "Thomas Nguyen",
+    "subject": "Life insurance annual report",
+    "body": "Hello,\n\nNorthwind sent my annual policy report. Attached for your files.\n\nThomas",
+    "receivedAt": "2026-11-02T11:15:00-04:00",
+    "attachments": [
+      {
+        "docId": "D27",
+        "filename": "Northwind annual policy report.pdf"
+      }
+    ]
+  },
+  {
+    "id": "E29",
+    "from": "kathleen.obrien@example.com",
+    "fromName": "Kathleen O'Brien",
+    "subject": "Trust certification",
+    "body": "Hi,\n\nOur attorney prepared the certification of trust you asked for so we can retitle the accounts. Attached.\n\nKathleen",
+    "receivedAt": "2026-11-02T13:20:00-04:00",
+    "attachments": [
+      {
+        "docId": "D28",
+        "filename": "OBrien Trust certification.pdf"
+      }
+    ]
+  },
+  {
+    "id": "E30",
+    "from": "mark.johnson@example.com",
+    "fromName": "Mark Johnson",
+    "subject": "Pension statement",
+    "body": "Attached is my pension statement from work.\n\nMark",
+    "receivedAt": "2026-11-02T14:05:00-04:00",
+    "attachments": [
+      {
+        "docId": "D29",
+        "filename": "Pension statement 2026.pdf"
+      }
+    ]
+  },
+  {
+    "id": "E31",
+    "from": "anil.patel@example.net",
+    "fromName": "Anil Patel",
+    "subject": "Signed new client profile",
+    "body": "Hello,\n\nPlease find my completed and signed new client profile attached. Looking forward to working together.\n\nAnil Patel",
+    "receivedAt": "2026-11-02T15:30:00-04:00",
+    "attachments": [
+      {
+        "docId": "D30",
+        "filename": "Harbor Point new client profile - signed.pdf"
+      }
+    ]
   }
 ]

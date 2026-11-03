@@ -127,6 +127,10 @@ output is committed. The demo set includes:
 - two Patel households, and a CPA sending a 1099 for "R. PATEL" (should go to review) (E16)
 - a statement for someone who isn't a client (should go to review) (E17)
 - 5 distractors: newsletter, scheduling request, phishing "invoice" with a PDF, marketing brochure, follow-up with no attachment
+- realistic multi-page documents (seed/realistic.py): a 4-page brokerage statement with holdings, allocation
+  chart and activity; a personal balance sheet and household income statement; a life insurance annual policy
+  report; a certification of trust; a pension benefit statement; and a new-client onboarding profile. The
+  **Run demo** button sends these. No real logos; every page is marked as a fictitious sample.
 
 ## Failure points (for the presentation)
 

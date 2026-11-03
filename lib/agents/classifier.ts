@@ -65,7 +65,7 @@ export async function runClassifierAgent(doc: { id: string; originalName: string
         type: "object",
         properties: {
           doc_type: { type: "string", enum: [...DOC_TYPES] },
-          source: { type: "string", enum: ["Schwab", "Fidelity", "Vanguard", "Pershing", "NorthwindLife", "HarborPoint", "DMV", "Other"] },
+          source: { type: "string", enum: ["Schwab", "Fidelity", "Vanguard", "Pershing", "NorthwindLife", "HarborPoint", "DMV", "Client", "Attorney", "Employer", "Other"] },
           date: { type: "string", description: "YYYY-MM per the firm's date rule" },
           names_on_document: { type: "array", items: { type: "string" } },
           account_last4: { type: ["string", "null"], description: "Last 4 digits only, or null" },

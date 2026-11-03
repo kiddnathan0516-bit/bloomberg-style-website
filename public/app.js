@@ -449,14 +449,14 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function liveDemo() {
   if (running) return;
-  if (!confirm("Run the live demo? This clears the current data and emails 6 test documents to the demo Gmail.")) return;
+  if (!confirm("Run the live demo? This clears the current data and emails 7 test documents to the firm’s inbox.")) return;
   const status = $("#liveStatus");
   $("#demoPanel").classList.remove("hidden");
   $("#liveBtn").disabled = true;
   let step = 1;
   try {
     setStep(1);
-    status.textContent = "Sending 6 client emails to the firm’s inbox…";
+    status.textContent = "Sending 7 client emails to the firm’s inbox…";
     await post("live-demo");
     await refresh();
 
@@ -470,8 +470,8 @@ async function liveDemo() {
       const n = Object.keys(state.emails).length;
       if (n !== last) { last = n; lastChange = Date.now(); }
       const secs = Math.round((Date.now() - t0) / 1000);
-      status.textContent = `Waiting for the emails to arrive… ${n} of 6 received (${secs}s)`;
-      if (n >= 6 || (n > 0 && Date.now() - lastChange > 30000)) break;
+      status.textContent = `Waiting for the emails to arrive… ${n} of 7 received (${secs}s)`;
+      if (n >= 7 || (n > 0 && Date.now() - lastChange > 30000)) break;
       if (Date.now() - t0 > 240000) throw new Error("No emails arrived after 4 minutes. Check the Live demo workflow in n8n (Executions).");
     }
 
