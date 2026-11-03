@@ -74,21 +74,14 @@ function greeting() {
   const part = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
   return `${part} · ${new Date().toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" })}`;
 }
-const SUBTITLES = {
-  dashboard: greeting,
-  inbox: () => "Every email the firm received, and what happened to it",
-  files: () => "Client documents, filed by household, person and type",
-  review: () => "Documents waiting for a person to decide",
-  activity: () => "Everything the system did, step by step",
-  accuracy: () => "How the agents score against the answer key",
-};
+const SUBTITLES = { dashboard: greeting };
 function currentView() { const v = location.hash.slice(1); return TITLES[v] ? v : "dashboard"; }
 function show() {
   const v = currentView();
   document.querySelectorAll(".view").forEach((el) => el.classList.toggle("hidden", el.id !== `view-${v}`));
   document.querySelectorAll("#nav a").forEach((a) => a.classList.toggle("active", a.dataset.view === v));
   $("#viewTitle").textContent = TITLES[v];
-  $("#viewSub").textContent = SUBTITLES[v]();
+  $("#viewSub").textContent = SUBTITLES[v] ? SUBTITLES[v]() : "";
   render();
   if (v === "accuracy") loadEval();
 }
@@ -128,7 +121,7 @@ function render() {
 
   const v = currentView();
   if (v === "inbox") renderInbox(emails);
-  if (v === "files") renderTree(filed);
+  if (v === "files") renderFiles(filed);
   if (v === "review") renderReview(review);
   if (v === "activity") renderActivity();
 }
@@ -240,58 +233,95 @@ function openEmail(id) {
       <div class="muted small" style="margin:8px 0">Keyword pre-check: ${esc(e.ruleHits.join(", ") || "none")}</div>
       ${traceHtml([...e.trace, ...docs.flatMap((d) => d.trace)])}
     </details>`;
+  $("#drawer").classList.remove("wide");
   $("#drawer").classList.remove("hidden");
 }
 
 // ---------- files ----------
-let selectedDoc = null;
-function renderTree(filed) {
-  if (!filed.length) {
-    $("#tree").innerHTML = '<div class="muted">No documents filed yet.</div>';
+let selectedHH = null;
+let fileQuery = "";
+const FOLDER_ORDER = ["Statements", "Tax Documents", "Financial Statements", "Insurance", "Pension Statements", "Trust Documents",
+  "Rollovers & Transfers", "Beneficiary Forms", "Account Applications", "Onboarding", "Risk Questionnaires", "Identification", "Other"];
+const monthLabel = (ym) => { const [y, m] = (ym || "").split("-"); return y && m ? new Date(+y, +m - 1, 1).toLocaleDateString([], { month: "short", year: "numeric" }) : "—"; };
+const shortHH = (name) => (name || "").replace(/ Household$/, "");
+
+function fileRow(d, who = "") {
+  const folder = d.filing.folder.split("/")[2];
+  return `<div class="file-row" data-doc="${esc(d.id)}">
+    <span class="pdf big">PDF</span>
+    <div class="fr-name">${who ? `<div class="fr-who">${esc(who)}</div>` : ""}<div class="fr-file">${esc(d.filing.filename)}</div><div class="fr-orig">${esc(d.originalName)}</div></div>
+    <span class="tag">${esc(folder)}</span>
+    <span class="fr-meta">${monthLabel(d.classification?.date)}</span>
+    <span class="fr-by">${d.filing.filed_by === "human" ? "Person" : "Auto"}</span>
+  </div>`;
+}
+const byFolder = (a, b) =>
+  FOLDER_ORDER.indexOf(a.filing.folder.split("/")[2]) - FOLDER_ORDER.indexOf(b.filing.folder.split("/")[2]) ||
+  (b.classification?.date || "").localeCompare(a.classification?.date || "");
+
+function renderFiles(filed) {
+  const count = (hh) => filed.filter((d) => d.filing.household_id === hh).length;
+  const withDocs = directory.filter((h) => count(h.id));
+  if (!selectedHH || !count(selectedHH)) selectedHH = withDocs[0]?.id ?? null;
+  $("#hhList").innerHTML = directory.map((h) => `
+    <button class="hh-item ${h.id === selectedHH && !fileQuery ? "active" : ""} ${count(h.id) ? "" : "empty"}" data-hh="${h.id}">
+      <span class="avatar sm" style="background:hsl(${hue(h.id)} 55% 92%);color:hsl(${hue(h.id)} 45% 32%)">${esc(initials(shortHH(h.name)))}</span>
+      <span class="hh-text"><b>${esc(shortHH(h.name))}</b><span>${h.members.length} ${h.members.length === 1 ? "person" : "people"}</span></span>
+      <span class="hh-count">${count(h.id) || ""}</span>
+    </button>`).join("");
+
+  const body = $("#filesBody");
+  if (!filed.length) { body.innerHTML = '<div class="card empty">No documents yet.</div>'; return; }
+  const q = fileQuery.trim().toLowerCase();
+  if (q) {
+    const hits = filed.filter((d) => [d.filing.filename, d.originalName, personName(d.filing.person_id), hhName(d.filing.household_id), d.filing.folder.split("/")[2]]
+      .some((t) => (t || "").toLowerCase().includes(q))).sort(byFolder);
+    body.innerHTML = `<div class="card flush person-card"><div class="group-head"><b>${hits.length} result${hits.length === 1 ? "" : "s"}</b></div>${hits.map((d) => fileRow(d, personName(d.filing.person_id))).join("") || '<div class="empty">No matches.</div>'}</div>`;
     return;
   }
-  const open = new Set([...document.querySelectorAll("#tree details[open]")].map((d) => d.dataset.key));
-  const firstRender = !$("#tree details");
-  const byHh = {};
-  for (const d of filed) {
-    const [hh, p, folder] = d.filing.folder.split("/");
-    ((byHh[hh] ??= {})[p] ??= {})[folder] ??= [];
-    byHh[hh][p][folder].push(d);
-  }
-  const isOpen = (k) => (firstRender || open.has(k) ? "open" : "");
-  $("#tree").innerHTML = Object.keys(byHh).sort().map((hh) => `
-    <details class="hh" data-key="${hh}" ${isOpen(hh)}><summary>🏠 ${esc(hhName(hh))}</summary>
-      ${Object.keys(byHh[hh]).sort().map((p) => `
-        <details class="person" data-key="${hh}/${p}" ${isOpen(`${hh}/${p}`)}><summary>👤 ${esc(personName(p))}</summary>
-          ${Object.keys(byHh[hh][p]).sort().map((f) => `
-            <div class="folder">📁 ${esc(f)}</div>
-            ${byHh[hh][p][f].map((d) => `<div class="file ${selectedDoc === d.id ? "sel" : ""}" data-doc="${esc(d.id)}">📄 ${esc(d.filing.filename)}</div>`).join("")}
-          `).join("")}
-        </details>`).join("")}
-    </details>`).join("");
+  const h = directory.find((x) => x.id === selectedHH);
+  if (!h) { body.innerHTML = ""; return; }
+  const members = h.members.map((m) => ({ m, docs: filed.filter((d) => d.filing.person_id === m.id).sort(byFolder) })).filter((x) => x.docs.length);
+  body.innerHTML = `
+    <div class="hh-head">
+      <div><h2>${esc(h.name)}</h2><div class="muted">${esc(h.address)}</div></div>
+      <span class="pill ${h.status === "new" ? "blue" : "gray"}">${h.status === "new" ? "New client" : "Existing client"}</span>
+    </div>
+    ${members.map(({ m, docs }) => `
+      <div class="card flush person-card">
+        <div class="group-head">
+          <span class="avatar sm" style="background:hsl(${hue(m.id)} 55% 92%);color:hsl(${hue(m.id)} 45% 32%)">${esc(initials(`${m.first} ${m.last}`))}</span>
+          <b>${esc(m.first)} ${esc(m.last)}</b><span class="muted">${esc(m.role)}</span>
+          <span class="muted push">${docs.length} document${docs.length === 1 ? "" : "s"}</span>
+        </div>
+        ${docs.map((d) => fileRow(d)).join("")}
+      </div>`).join("")}`;
 }
 
-function previewDoc(id) {
-  selectedDoc = id;
-  document.querySelectorAll(".tree .file").forEach((f) => f.classList.toggle("sel", f.dataset.doc === id));
+function openDoc(id) {
   const d = state.docs[id];
   const c = d.classification || {};
   const e = state.emails[d.emailId];
-  $("#preview").innerHTML = `
-    <h2>${esc(d.filing.filename)}</h2>
-    <div class="muted">${esc(folderLabel(d.filing.folder))} · originally "${esc(d.originalName)}" from ${esc(e?.fromName)}
-      · filed by ${d.filing.filed_by === "human" ? "a human reviewer" : "the Filing Agent"}</div>
+  const field = (l, v) => `<div class="field"><div class="l">${l}</div><div class="v">${v}</div></div>`;
+  $("#drawerBody").innerHTML = `
+    <div class="d-head"><span class="pdf big">PDF</span><div>
+      <h2 style="margin:0">${esc(d.filing.filename)}</h2>
+      <div class="muted">${esc(folderLabel(d.filing.folder))}</div></div></div>
     <div class="fields">
-      <div class="field"><div class="l">Doc type</div><div class="v">${esc(c.doc_type)}</div></div>
-      <div class="field"><div class="l">Source</div><div class="v">${esc(c.source)}</div></div>
-      <div class="field"><div class="l">Period / date</div><div class="v">${esc(c.statement_period || c.date)}</div></div>
-      <div class="field"><div class="l">Account</div><div class="v">${c.account_last4 ? `••••${esc(c.account_last4)}` : "—"}</div></div>
-      <div class="field"><div class="l">Ending balance</div><div class="v">${c.ending_balance != null ? `$${Number(c.ending_balance).toLocaleString()}` : "—"}</div></div>
-      <div class="field"><div class="l">Confidence</div><div class="v">${pct(d.filing.confidence)}</div></div>
+      ${field("Type", esc(d.filing.folder.split("/")[2]))}
+      ${field("Source", esc(c.source || "—"))}
+      ${field("Date", esc(c.statement_period || monthLabel(c.date)))}
+      ${field("Account", c.account_last4 ? `••••${esc(c.account_last4)}` : "—")}
+      ${c.ending_balance != null ? field("Ending balance", `$${Number(c.ending_balance).toLocaleString()}`) : ""}
+      ${field("Received from", esc(e?.fromName || "—"))}
     </div>
-    <p class="muted">${esc(d.filing.reasoning)}</p>
-    <iframe src="/api/pdf/${encodeURIComponent(id)}" title="PDF preview"></iframe>
-    <details style="margin-top:12px"><summary>Agent steps</summary>${traceHtml(d.trace)}</details>`;
+    <iframe class="doc-frame" src="/api/pdf/${encodeURIComponent(id)}" title="PDF preview"></iframe>
+    <details class="ai-details"><summary>Show AI details</summary>
+      <p class="muted small">${esc(d.filing.reasoning)} · ${pct(d.filing.confidence)} confident · ${d.filing.filed_by === "human" ? "filed by a person" : "filed automatically"}</p>
+      ${traceHtml(d.trace)}
+    </details>`;
+  $("#drawer").classList.add("wide");
+  $("#drawer").classList.remove("hidden");
 }
 
 // ---------- review ----------
@@ -327,7 +357,7 @@ function renderReview(items) {
       <div class="review-actions">
         <label>File under client</label>
         <select class="r-person"><option value="">— choose client —</option>${opts(r.suggested_person_id)}</select>
-        <label>Filename (leave blank to auto-generate)</label>
+        <label>Filename (optional)</label>
         <input class="r-filename" value="${esc(r.suggested_filename || "")}" placeholder="YYYY-MM_Last-First_Source_DocType.pdf" />
         ${c ? `<div class="btns">
           <button class="good r-approve">Approve &amp; file</button>
@@ -369,11 +399,20 @@ async function reviewClick(btn) {
 }
 
 // ---------- activity ----------
+// Turn internal ids in log messages into names people recognize.
+function prettyLog(msg) {
+  return msg
+    .replace(/(HH-[A-Z-]+)\/(P-[A-Z]+)\/([^/]+)\//g, (_, hh, p, f) => `${hhName(hh)} / ${personName(p)} / ${f} / `)
+    .replace(/\(conf (\d\.\d+)\)/g, (_, c) => `· ${Math.round(+c * 100)}% confident`)
+    .replace(/, conf (\d\.\d+)/g, (_, c) => `, ${Math.round(+c * 100)}% confident`)
+    .replace(/^Ops digest: /, "");
+}
+const ACTOR_CLASS = { "Intake Agent": "a1", "Classifier Agent": "a2", "Filing Agent": "a3", Human: "hu", Automation: "au" };
 function renderActivity() {
   $("#activityLog").innerHTML = [...state.log].reverse().map((l) =>
-    `<li><span class="when">${fmtTime(l.at)}</span><span class="who">${esc(l.actor)}</span>${esc(l.message)}</li>`).join("") || '<li class="muted">Nothing yet.</li>';
+    `<li class="${ACTOR_CLASS[l.actor] || "au"}"><span class="dot"></span><div><div class="tl-top"><b>${esc(l.actor)}</b><span>${fmtTime(l.at)}</span></div><div class="tl-msg">${esc(prettyLog(l.message))}</div></div></li>`).join("") || '<li class="empty">Nothing yet.</li>';
   $("#digestHistory").innerHTML = [...state.digests].reverse().map((d) =>
-    `<div class="digest"><div class="muted">${fmtTime(d.at)}</div>${esc(d.summary)}</div>`).join("") || '<div class="muted">No digests yet.</div>';
+    `<div class="digest"><div class="muted small">${fmtTime(d.at)}</div><div class="dg-nums"><span><b>${d.filed}</b> filed</span><span><b>${d.needsReview}</b> review</span><span><b>${d.ignored}</b> ignored</span></div></div>`).join("") || '<div class="muted">None yet.</div>';
 }
 
 // ---------- accuracy ----------
@@ -381,11 +420,12 @@ const VERDICT = {
   correct: ["green", "Auto-filed correctly"], correct_review: ["green", "Correctly sent to review"],
   safe_review: ["amber", "Sent to review (safe)"], misfiled: ["red", "MISFILED"], not_processed: ["gray", "Not processed"],
 };
+const namesIn = (t) => String(t).replace(/P-[A-Z]+/g, (id) => personName(id));
 async function loadEval() {
   try {
     const ev = await api("eval");
     const s = ev.summary;
-    $("#evalHeadline").textContent = s.not_processed === s.total_docs ? "Load the demo inbox and run the automation to see results." : ev.headline;
+    $("#evalHeadline").textContent = s.not_processed === s.total_docs ? "No sample inbox results yet." : ev.headline;
     $("#evalKpis").innerHTML = `
       <div class="kpi"><div class="kpi-label">Auto-filed correctly</div><div class="kpi-value good">${s.auto_filed_correctly}/${s.should_auto_file}</div></div>
       <div class="kpi"><div class="kpi-label">Sent to review</div><div class="kpi-value warn">${s.sent_to_review_safely + s.ambiguous_caught}</div></div>
@@ -393,7 +433,7 @@ async function loadEval() {
       <div class="kpi"><div class="kpi-label">Junk ignored</div><div class="kpi-value">${s.distractors_ignored}/${s.distractors_total}</div></div>`;
     $("#evalTable tbody").innerHTML = ev.docs.map((d) => `<tr>
       <td>${esc(d.doc_id)}</td><td>${pill(VERDICT, d.verdict)}${d.filename_match === false ? '<br><span class="muted">filename differs</span>' : ""}</td>
-      <td>${esc(d.expected)}</td><td>${esc(d.actual)}</td><td class="muted">${esc(d.note)}</td></tr>`).join("");
+      <td>${esc(namesIn(d.expected))}</td><td>${esc(namesIn(d.actual))}</td><td class="muted">${esc(d.note)}</td></tr>`).join("");
   } catch (e) { toast(e.message, true); }
 }
 
@@ -511,11 +551,15 @@ document.addEventListener("click", (ev) => {
   if (tab) { inboxFilter = tab.dataset.filter; return render(); }
   const row = ev.target.closest("[data-email]");
   if (row) return openEmail(row.dataset.email);
-  const file = ev.target.closest(".tree .file");
-  if (file) return previewDoc(file.dataset.doc);
+  const file = ev.target.closest(".file-row");
+  if (file) return openDoc(file.dataset.doc);
+  const hh = ev.target.closest(".hh-item");
+  if (hh) { selectedHH = hh.dataset.hh; fileQuery = ""; $("#fileSearch").value = ""; return render(); }
   const btn = ev.target.closest(".r-approve, .r-reject, .r-release");
   if (btn) return reviewClick(btn);
 });
+
+$("#fileSearch").addEventListener("input", (ev) => { fileQuery = ev.target.value; render(); });
 
 (async () => {
   updateLock();

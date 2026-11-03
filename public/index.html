@@ -44,7 +44,6 @@
         <div class="auto-head">
           <div>
             <h2>Client document inbox</h2>
-            <p class="muted">The firm’s inbox is checked every 5 minutes. New client documents are read, matched to the right client and filed. Anything uncertain waits for your review.</p>
           </div>
           <div class="auto-side">
             <div class="auto-status" id="autoStatus"><span class="dot"></span><span id="autoText">Checking…</span></div>
@@ -111,37 +110,35 @@
 
     <!-- FILES -->
     <section id="view-files" class="view hidden">
-      <div class="files-layout">
-        <div class="card tree" id="tree"></div>
-        <div class="card preview" id="preview"><div class="muted">Select a document to preview it.</div></div>
+      <div class="files-shell">
+        <aside class="card flush hh-list" id="hhList"></aside>
+        <div class="files-main">
+          <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="fileSearch" type="search" placeholder="Search files and clients" autocomplete="off" /></div>
+          <div id="filesBody"></div>
+        </div>
       </div>
     </section>
 
     <!-- REVIEW -->
     <section id="view-review" class="view hidden">
-      <p class="muted intro">These documents were <b>not</b> filed automatically because an agent was not confident enough. Nothing gets filed here until a person approves it.</p>
       <div id="reviewList"></div>
     </section>
 
     <!-- ACTIVITY -->
     <section id="view-activity" class="view hidden">
-      <div class="grid2">
-        <div class="card"><h2>Activity log</h2><ol id="activityLog" class="log"></ol></div>
-        <div class="card"><h2>Digest history</h2><div id="digestHistory"></div></div>
+      <div class="activity-shell">
+        <div class="card"><h2>Timeline</h2><ol id="activityLog" class="timeline"></ol></div>
+        <div class="card"><h2>Summaries</h2><div id="digestHistory"></div></div>
       </div>
     </section>
 
     <!-- ACCURACY -->
     <section id="view-accuracy" class="view hidden">
-      <div class="card">
-        <h2>Accuracy against the answer key</h2>
-        <p class="muted">Compares what the agents did with the correct answer for each demo document. Load the demo inbox and run the automation first.</p>
-        <div id="evalHeadline" class="headline"></div>
-        <div class="kpis" id="evalKpis"></div>
-      </div>
+      <div id="evalHeadline" class="headline"></div>
+      <div class="kpis four" id="evalKpis"></div>
       <div class="card flush">
         <table class="table" id="evalTable">
-          <thead><tr><th>Doc</th><th>Result</th><th>Expected</th><th>Actual</th><th>Notes</th></tr></thead>
+          <thead><tr><th>Doc</th><th>Result</th><th>Expected</th><th>Actual</th><th>Case</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>

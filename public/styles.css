@@ -302,3 +302,81 @@ details.admin { box-shadow: none; background: transparent; border-style: dashed;
 .verdict { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-weight: 500; }
 .ai-details { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 12px; }
 .ai-details > summary { cursor: pointer; color: var(--muted); font-weight: 500; }
+
+/* ===================== Sorted Files ===================== */
+.files-shell { display: grid; grid-template-columns: 260px 1fr; gap: 20px; align-items: start; }
+.hh-list { position: sticky; top: 20px; padding: 8px; display: flex; flex-direction: column; gap: 2px; }
+.hh-item { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; border: none; background: transparent; padding: 9px 10px; border-radius: 10px; box-shadow: none; }
+.hh-item:hover { background: #f3f5f9; }
+.hh-item.active { background: #e9f1fc; }
+.hh-item.empty { opacity: .45; }
+.hh-text { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.hh-text b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hh-text span { font-size: 12px; color: var(--muted); }
+.hh-count { font-size: 12px; font-weight: 600; color: var(--muted); background: var(--gray-bg); border-radius: 999px; padding: 1px 8px; }
+.hh-count:empty { display: none; }
+.hh-item.active .hh-count { background: #fff; color: var(--accent); }
+.avatar.sm { width: 32px; height: 32px; font-size: 12px; flex-shrink: 0; }
+.files-main { min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+.search { display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 0 14px; box-shadow: var(--shadow); }
+.search svg { width: 18px; height: 18px; color: var(--muted); flex-shrink: 0; }
+.search input { border: none; outline: none; font: inherit; padding: 12px 0; width: 100%; background: transparent; }
+.hh-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 4px 4px 0; }
+.hh-head h2 { font-size: 20px; margin: 0 0 2px; }
+.person-card { overflow: hidden; margin-bottom: 0; }
+.group-head { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--line); background: #fafbfd; }
+.group-head .push { margin-left: auto; }
+.file-row { display: grid; grid-template-columns: 36px minmax(0, 1fr) 170px 110px 80px 56px; gap: 14px; align-items: center; padding: 12px 18px; border-bottom: 1px solid var(--line); cursor: pointer; transition: background .12s; }
+.file-row:last-child { border-bottom: none; }
+.file-row:hover { background: #f6f9fe; }
+.pdf { background: #fdecea; color: #b42318; font-weight: 700; font-size: 10px; padding: 2px 5px; border-radius: 5px; }
+.pdf.big { font-size: 10.5px; padding: 8px 0; width: 36px; text-align: center; border-radius: 8px; flex-shrink: 0; }
+.fr-name { min-width: 0; }
+.fr-who { font-size: 12px; color: var(--accent); font-weight: 600; }
+.fr-file { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fr-orig { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tag { justify-self: start; background: var(--gray-bg); color: #3d4a5c; border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.fr-meta { color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fr-by { font-size: 11.5px; color: var(--muted); text-align: right; }
+.drawer.wide .drawer-panel { width: min(980px, 100%); }
+.doc-frame { width: 100%; height: 68vh; border: 1px solid var(--line); border-radius: 12px; background: #f3f4f6; margin-top: 8px; }
+
+/* ===================== Review Queue ===================== */
+.review-card { grid-template-columns: 1fr 300px; gap: 24px; }
+.review-card h2 { display: flex; align-items: center; gap: 8px; }
+.reason { background: #fff8eb; border-left: 3px solid #e3a008; border-radius: 8px; }
+.review-actions { background: #fafbfd; border: 1px solid var(--line); border-radius: 12px; padding: 16px; align-self: start; }
+.review-actions label:first-child { margin-top: 0; }
+.review-actions select, .review-actions input { border-radius: 10px; background: #fff; }
+
+/* ===================== Activity ===================== */
+.activity-shell { display: grid; grid-template-columns: 1fr 300px; gap: 20px; align-items: start; }
+.timeline { list-style: none; margin: 0; padding: 0; max-height: 72vh; overflow: auto; }
+.timeline li { display: grid; grid-template-columns: 14px 1fr; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.timeline li:last-child { border-bottom: none; }
+.timeline .dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 5px; background: var(--muted); }
+.timeline .a1 .dot { background: #6b5bd2; }
+.timeline .a2 .dot { background: #1d6fd1; }
+.timeline .a3 .dot { background: #12805c; }
+.timeline .hu .dot { background: #c9a227; }
+.tl-top { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; }
+.tl-top span { color: var(--muted); white-space: nowrap; }
+.tl-msg { color: #3d4a5c; margin-top: 2px; word-break: break-word; }
+.dg-nums { display: flex; gap: 14px; margin-top: 4px; font-size: 13px; color: var(--muted); }
+.dg-nums b { color: var(--ink); font-size: 15px; }
+
+/* ===================== Accuracy ===================== */
+.kpis.four { grid-template-columns: repeat(4, 1fr); }
+.headline { font-size: 17px; margin: 0 0 16px; }
+
+@media (max-width: 900px) {
+  .files-shell, .activity-shell, .review-card { grid-template-columns: 1fr; }
+  .hh-list { position: static; flex-direction: row; overflow-x: auto; }
+  .hh-item { min-width: 170px; }
+  .file-row { grid-template-columns: 36px minmax(0, 1fr) auto; }
+  .file-row .fr-meta, .file-row .fr-by { display: none; }
+  .kpis.four { grid-template-columns: 1fr 1fr; }
+}
+.file-row { grid-template-columns: 36px minmax(0, 1fr) 180px 80px 48px; }
+.fr-file { white-space: normal; overflow-wrap: anywhere; }
+@media (max-width: 900px) { .file-row { grid-template-columns: 36px minmax(0, 1fr) auto; } }
