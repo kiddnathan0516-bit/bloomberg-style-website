@@ -18,6 +18,7 @@ const lastToolResult = (p: any) => {
 const taskText = (p: any) => (typeof p.messages[0].content === "string" ? p.messages[0].content : "");
 
   setCreateOverride(async (p: any) => {
+    if (process.env.MOCK_DELAY_MS) await new Promise((r) => setTimeout(r, Number(process.env.MOCK_DELAY_MS)));
   const sys = Array.isArray(p.system) ? p.system[0].text : "";
   const turn = p.messages.filter((m: any) => m.role === "assistant").length;
   if (!sys) return reply([{ type: "text", text: "COMMONWEALTH OF MASSACHUSETTS DRIVER'S LICENSE Name: SCANNED PERSON" }]); // OCR call

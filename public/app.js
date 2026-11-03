@@ -451,7 +451,7 @@ async function loadEval() {
 }
 
 // ---------- automation buttons ----------
-const WORKERS = 5; // agents running at the same time
+const WORKERS = 20; // agents running at the same time
 async function runNow(rethrow = false) {
   if (running) return;
   running = true;
@@ -466,14 +466,14 @@ async function runNow(rethrow = false) {
     $("#liveLog").insertAdjacentHTML("afterbegin", `<li>${esc(r.did)}</li>`);
     $("#barFill").style.width = `${Math.min(100, ((start - r.remaining) / start) * 100)}%`;
     $("#progressText").textContent = `${steps} agent runs · ${r.remaining} steps left`;
-    if (rethrow) $("#liveStatus").textContent = `Sorting documents… ${r.remaining ? `${r.remaining} steps left` : "almost done"}`;
+    if (rethrow) $("#liveStatus").textContent = `Sorting documents… ${Object.values(state?.docs || {}).filter((d) => d.status === "filed").length} filed so far`;
   };
   // Each worker keeps asking the server for the next item until nothing is left.
   // The server hands every item to only one worker, so they never double up.
   const worker = async (k) => {
     let waits = 0;
     while (!stop) {
-      const r = await post(`work?w=${k}&of=${WORKERS}`);
+      const r = await post("work");
       if (r.did === "idle") return;
       if (r.did.startsWith("waiting")) {
         if (++waits > 60) return;
@@ -518,6 +518,40 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function liveDemo() {
   if (running) return;
+  if (!confirm("Run the demo? This clears the current data and brings in 22 client documents.")) return;
+  const status = $("#liveStatus");
+  $("#demoPanel").classList.remove("hidden");
+  $("#liveBtn").disabled = true;
+  const t0 = Date.now();
+  const secs = () => Math.round((Date.now() - t0) / 1000);
+  const tick = setInterval(() => { if (running) $("#liveTimer").textContent = `${secs()}s`; }, 1000);
+  let step = 1;
+  try {
+    setStep(1);
+    status.textContent = "Client emails arriving…";
+    const { emails } = await post("demo");
+    step = 2;
+    setStep(2);
+    await refresh();
+    status.textContent = `${emails} emails received`;
+    step = 3;
+    setStep(3);
+    await runNow(true);
+    setStep(5);
+    status.textContent = `Done in ${secs()} seconds. See Sorted Files and the Review Queue.`;
+  } catch (e) {
+    setStep(step, "failed");
+    status.textContent = e.message;
+    toast(e.message, true);
+  } finally {
+    clearInterval(tick);
+    $("#liveTimer").textContent = "";
+    $("#liveBtn").disabled = false;
+  }
+}
+
+async function gmailDemo() {
+  if (running) return;
   if (!confirm("Run the live demo? This clears the current data and emails the demo documents to the firm’s inbox.")) return;
   const status = $("#liveStatus");
   $("#demoPanel").classList.remove("hidden");
@@ -561,6 +595,7 @@ async function liveDemo() {
 }
 
 $("#liveBtn").onclick = liveDemo;
+$("#gmailDemoBtn").onclick = gmailDemo;
 $("#runBtn").onclick = () => runNow();
 $("#seedBtn").onclick = async () => {
   if (!confirm("Load the 25 demo emails? This clears current data.")) return;

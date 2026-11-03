@@ -390,3 +390,6 @@ details.admin { box-shadow: none; background: transparent; border-style: dashed;
 .section-head ~ .file-row { padding-left: 46px; grid-template-columns: 36px minmax(0, 1fr) 80px 48px; border-bottom: none; }
 .section-head ~ .file-row:last-child { padding-bottom: 14px; }
 @media (max-width: 900px) { .section-head ~ .file-row { padding-left: 18px; grid-template-columns: 36px minmax(0, 1fr); } }
+
+.live-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.timer { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 18px; color: var(--accent); }

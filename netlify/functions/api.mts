@@ -4,6 +4,7 @@ import { loadState, store, pdfKey } from "../../lib/store.js";
 import {
   ingestEmail,
   loadDemoInbox,
+  loadDemoEmails,
   readSeedPdfFromDisk,
   workOnce,
   makeDigest,
@@ -92,7 +93,7 @@ export default async (req: Request) => {
       if (!allowed(req, "passcode")) return json({ error: "wrong passcode" }, 401);
       if (fromAutomation(req)) await heartbeat();
       // Parallel workers pass ?w=<their number>&of=<how many>; each handles its own share.
-      const of = Math.max(1, Math.min(10, Number(url.searchParams.get("of")) || 1));
+      const of = Math.max(1, Math.min(32, Number(url.searchParams.get("of")) || 1));
       const w = Math.max(0, Math.min(of - 1, Number(url.searchParams.get("w")) || 0));
       return json(await workOnce({ w, of }));
     }
@@ -102,20 +103,17 @@ export default async (req: Request) => {
     }
 
     if (!allowed(req, "passcode")) return json({ error: "wrong passcode" }, 401);
-    if (route === "seed") {
-      const origin = url.origin;
-      return json(
-        await loadDemoInbox(async (id) => {
-          try {
-            return await readSeedPdfFromDisk(id);
-          } catch {
-            const r = await fetch(`${origin}/demo-pdfs/${id}.pdf`);
-            if (!r.ok) throw new Error(`Could not load demo PDF ${id}`);
-            return new Uint8Array(await r.arrayBuffer());
-          }
-        }),
-      );
-    }
+    const readPdf = async (id: string) => {
+      try {
+        return await readSeedPdfFromDisk(id);
+      } catch {
+        const r = await fetch(`${url.origin}/demo-pdfs/${id}.pdf`);
+        if (!r.ok) throw new Error(`Could not load demo PDF ${id}`);
+        return new Uint8Array(await r.arrayBuffer());
+      }
+    };
+    if (route === "seed") return json(await loadDemoInbox(readPdf));
+    if (route === "demo") return json(await loadDemoEmails(readPdf));
     if (route === "reset") {
       await resetState();
       return json({ ok: true });

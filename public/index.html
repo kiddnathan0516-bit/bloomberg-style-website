@@ -47,7 +47,7 @@
           </div>
           <div class="auto-side">
             <div class="auto-status" id="autoStatus"><span class="dot"></span><span id="autoText">Checking…</span></div>
-            <button class="primary big" id="liveBtn" title="Emails 7 test documents to the firm’s inbox and processes them now">▶ Run demo</button>
+            <button class="primary big" id="liveBtn" title="Brings in 22 client documents and sorts them">▶ Run demo</button>
           </div>
         </div>
         <div class="muted" id="autoDetail"></div>
@@ -58,7 +58,7 @@
           <li data-step="3"><b>Sorting</b><span>Each document is read, matched to a client and filed</span></li>
           <li data-step="4"><b>Summary</b><span>Today’s summary is ready</span></li>
         </ol>
-          <div id="liveStatus" class="muted"></div>
+          <div class="live-foot"><div id="liveStatus" class="muted"></div><span id="liveTimer" class="timer"></span></div>
         </div>
       </div>
 
@@ -81,6 +81,7 @@
           <button id="seedBtn">Load sample inbox</button>
           <button id="digestBtn">Write summary</button>
           <button class="danger" id="resetBtn">Reset</button>
+          <button id="gmailDemoBtn">Send demo through Gmail (slower)</button>
         </div>
         <div class="muted" id="queueInfo"></div>
       

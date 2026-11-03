@@ -5,6 +5,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import emailsJson from "../seed/data/emails.json" with { type: "json" };
+import demoList from "../seed/data/demo-emails.json" with { type: "json" };
 import { loadState, updateState, store, pdfKey, resetState } from "./store.js";
 import { runIntakeAgent, keywordRules } from "./agents/intake.js";
 import { runClassifierAgent } from "./agents/classifier.js";
@@ -90,6 +91,45 @@ export async function loadDemoInbox(readPdf: (docId: string) => Promise<Uint8Arr
   return { emails: emails.length };
 }
 
+/**
+ * The fast demo: put the demo emails (seed/data/demo-emails.json) straight into the inbox,
+ * as if they had just arrived from the clients, so the agents can start immediately.
+ */
+export async function loadDemoEmails(readPdf: (docId: string) => Promise<Uint8Array>) {
+  await resetState();
+  const seedEmails = emailsJson as { from: string; fromName: string; attachments: { docId: string }[] }[];
+  const list = demoList as { pdf: string; file: string; subject: string; body: string }[];
+  const t = Date.now();
+  const records = list.map((d, i) => {
+    const sender = seedEmails.find((e) => e.attachments.some((a) => a.docId === d.pdf));
+    const id = `M${String(i + 1).padStart(3, "0")}`;
+    const docId = `${id}-A1`;
+    return {
+      pdf: d.pdf,
+      email: newEmailRecord({
+        id,
+        source: "demo",
+        from: sender?.from ?? "unknown@example.com",
+        fromName: sender?.fromName ?? "Unknown sender",
+        subject: d.subject,
+        body: d.body,
+        receivedAt: new Date(t - (list.length - i) * 45_000).toISOString(),
+        attachments: [{ docId, filename: d.file }],
+      }),
+    };
+  });
+  await Promise.all(records.map(async (r) => store().setBytes(pdfKey(r.email.attachments[0].docId), await readPdf(r.pdf))));
+  await updateState((s) => {
+    for (const { email } of records) {
+      s.emails[email.id] = email;
+      const a = email.attachments[0];
+      s.docs[a.docId] = newDoc(a.docId, email.id, a.filename);
+    }
+    addLog(s, "Automation", `${records.length} new client emails received`);
+  });
+  return { emails: records.length };
+}
+
 export async function readSeedPdfFromDisk(docId: string) {
   return new Uint8Array(await fs.readFile(path.resolve("seed/data/pdfs", `${docId}.pdf`)));
 }
@@ -127,14 +167,19 @@ const mine = (emailId: string, share: Share) => share.of <= 1 || owner(emailId, 
 async function claimNext(share: Share): Promise<{ kind: "email" | "classify" | "file"; id: string } | null> {
   let picked: { kind: "email" | "classify" | "file"; id: string } | null = null;
   await updateState((s) => {
-    const email = Object.values(s.emails).filter((e) => e.status === "queued" && free(e) && mine(e.id, share)).sort(byId)[0];
-    const docs = Object.values(s.docs).filter((d) => free(d) && mine(d.emailId, share)).sort(byId);
-    const classify = docs.find((d) => d.status === "to_classify");
-    const file = docs.find((d) => d.status === "to_file");
-    const rec = email ?? classify ?? file;
-    if (!rec) return;
-    rec.claimedUntil = new Date(Date.now() + CLAIM_MS).toISOString();
-    picked = { kind: email ? "email" : classify ? "classify" : "file", id: rec.id };
+    // Any waiting item, picked at random so parallel workers rarely reach for the same one.
+    type Item = { kind: "email" | "classify" | "file"; rec: EmailRecord | DocRecord };
+    const items: Item[] = [];
+    for (const e of Object.values(s.emails)) if (e.status === "queued" && free(e) && mine(e.id, share)) items.push({ kind: "email", rec: e });
+    for (const d of Object.values(s.docs)) {
+      if (!free(d) || !mine(d.emailId, share)) continue;
+      if (d.status === "to_classify") items.push({ kind: "classify", rec: d });
+      else if (d.status === "to_file") items.push({ kind: "file", rec: d });
+    }
+    if (!items.length) return;
+    const pick = items[Math.floor(Math.random() * items.length)];
+    pick.rec.claimedUntil = new Date(Date.now() + CLAIM_MS).toISOString();
+    picked = { kind: pick.kind, id: pick.rec.id };
   });
   return picked;
 }
