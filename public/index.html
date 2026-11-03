@@ -18,12 +18,12 @@
       </div>
     </div>
     <nav id="nav">
-      <a href="#dashboard" data-view="dashboard">Dashboard</a>
-      <a href="#inbox" data-view="inbox">Inbox <span class="count" id="c-inbox"></span></a>
-      <a href="#files" data-view="files">Sorted Files <span class="count" id="c-files"></span></a>
-      <a href="#review" data-view="review">Review Queue <span class="count warn" id="c-review"></span></a>
-      <a href="#activity" data-view="activity">Activity &amp; Digest</a>
-      <a href="#accuracy" data-view="accuracy">Accuracy Test</a>
+      <a href="#dashboard" data-view="dashboard"><span class="nav-l"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13h8V3H3zM13 21h8V11h-8zM3 21h8v-6H3zM13 3v6h8V3z"/></svg>Dashboard</span></a>
+      <a href="#inbox" data-view="inbox"><span class="nav-l"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>Inbox</span> <span class="count" id="c-inbox"></span></a>
+      <a href="#files" data-view="files"><span class="nav-l"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Sorted Files</span> <span class="count" id="c-files"></span></a>
+      <a href="#review" data-view="review"><span class="nav-l"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Review Queue</span> <span class="count warn" id="c-review"></span></a>
+      <a href="#activity" data-view="activity"><span class="nav-l"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Activity &amp; Digest</span></a>
+      <a href="#accuracy" data-view="accuracy"><span class="nav-l"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>Accuracy Test</span></a>
     </nav>
     <div class="sidebar-foot">
       <div class="demo-badge">Demo data only. All clients are fictitious.</div>
@@ -33,7 +33,7 @@
 
   <main>
     <header class="topbar">
-      <h1 id="viewTitle">Dashboard</h1>
+      <div><h1 id="viewTitle">Dashboard</h1><div class="subtitle" id="viewSub"></div></div>
       <div class="topbar-right"><span id="lastSync" class="muted"></span></div>
     </header>
     <div id="toast" class="toast hidden"></div>
@@ -64,9 +64,9 @@
       </div>
 
       <div class="kpis three">
-        <a class="kpi link" href="#files"><div class="kpi-label">Documents filed</div><div class="kpi-value" id="k-filed">0</div></a>
-        <a class="kpi link" href="#review"><div class="kpi-label">Needs your review</div><div class="kpi-value warn" id="k-review">0</div></a>
-        <a class="kpi link" href="#inbox"><div class="kpi-label">Emails ignored</div><div class="kpi-value" id="k-ignored">0</div></a>
+        <a class="kpi link t-blue" href="#files"><div class="kpi-ico"><svg class="" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div><div><div class="kpi-label">Documents filed</div><div class="kpi-value" id="k-filed">0</div><div class="kpi-cta">View folders →</div></div></a>
+        <a class="kpi link t-amber" href="#review"><div class="kpi-ico"><svg class="" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><div><div class="kpi-label">Needs your review</div><div class="kpi-value" id="k-review">0</div><div class="kpi-cta">Open queue →</div></div></a>
+        <a class="kpi link t-gray" href="#inbox"><div class="kpi-ico"><svg class="" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg></div><div><div class="kpi-label">Emails ignored</div><div class="kpi-value" id="k-ignored">0</div><div class="kpi-cta">See inbox →</div></div></a>
       </div>
 
       <div class="card">
@@ -96,12 +96,16 @@
 
     <!-- INBOX -->
     <section id="view-inbox" class="view hidden">
-      <div class="card flush">
-        <table class="table" id="inboxTable">
-          <thead><tr><th>Received</th><th>From</th><th>Subject</th><th>Files</th><th>Status</th></tr></thead>
-          <tbody></tbody>
-        </table>
-        <div class="empty hidden" id="inboxEmpty">The inbox is empty. Go to the Dashboard and click <b>Load demo inbox</b>, or send an email to the demo Gmail.</div>
+      <div class="tabs" id="inboxTabs">
+        <button class="tab active" data-filter="all">All <span id="f-all"></span></button>
+        <button class="tab" data-filter="processed">Filed <span id="f-processed"></span></button>
+        <button class="tab" data-filter="needs_review">Needs review <span id="f-needs_review"></span></button>
+        <button class="tab" data-filter="ignored">Ignored <span id="f-ignored"></span></button>
+        <button class="tab" data-filter="working">In progress <span id="f-working"></span></button>
+      </div>
+      <div class="card flush mail-card">
+        <div id="mailList" class="mail-list"></div>
+        <div class="empty hidden" id="inboxEmpty">No emails here yet. New client emails show up automatically within 5 minutes.</div>
       </div>
     </section>
 

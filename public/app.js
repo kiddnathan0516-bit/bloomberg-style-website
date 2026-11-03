@@ -69,16 +69,30 @@ function traceHtml(trace) {
 
 // ---------- routing ----------
 const TITLES = { dashboard: "Dashboard", inbox: "Inbox", files: "Sorted Files", review: "Review Queue", activity: "Activity & Digest", accuracy: "Accuracy Test" };
+function greeting() {
+  const h = new Date().getHours();
+  const part = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+  return `${part} · ${new Date().toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" })}`;
+}
+const SUBTITLES = {
+  dashboard: greeting,
+  inbox: () => "Every email the firm received, and what happened to it",
+  files: () => "Client documents, filed by household, person and type",
+  review: () => "Documents waiting for a person to decide",
+  activity: () => "Everything the system did, step by step",
+  accuracy: () => "How the agents score against the answer key",
+};
 function currentView() { const v = location.hash.slice(1); return TITLES[v] ? v : "dashboard"; }
 function show() {
   const v = currentView();
   document.querySelectorAll(".view").forEach((el) => el.classList.toggle("hidden", el.id !== `view-${v}`));
   document.querySelectorAll("#nav a").forEach((a) => a.classList.toggle("active", a.dataset.view === v));
   $("#viewTitle").textContent = TITLES[v];
+  $("#viewSub").textContent = SUBTITLES[v]();
   render();
   if (v === "accuracy") loadEval();
 }
-window.addEventListener("hashchange", show);
+window.addEventListener("hashchange", () => { $("#drawer").classList.add("hidden"); show(); });
 
 // ---------- data ----------
 async function refresh() {
@@ -148,40 +162,84 @@ function renderAutoStatus() {
 }
 
 // ---------- inbox ----------
+let inboxFilter = "all";
+const WORKING = ["queued", "processing", "error"];
+const matchesFilter = (e, f) => f === "all" || (f === "working" ? WORKING.includes(e.status) : e.status === f);
+const initials = (name) => (name || "?").replace(/[^A-Za-z ]/g, "").split(" ").filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("") || "?";
+const hue = (str) => [...String(str)].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7);
+function shortTime(iso) {
+  const d = new Date(iso), now = new Date();
+  return d.toDateString() === now.toDateString()
+    ? d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+    : d.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+function docChip(d) {
+  const [cls, label] =
+    d.status === "filed" ? ["green", `Filed · ${personName(d.filing.person_id)}`]
+    : d.status === "review" || d.status === "error" ? ["amber", "Needs review"]
+    : d.status === "skipped" ? ["gray", "Not filed"]
+    : d.status === "rejected" ? ["gray", "Rejected"]
+    : ["blue", "Working…"];
+  return `<span class="chip"><span class="pdf">PDF</span>${esc(d.originalName)}<span class="chip-status ${cls}">${esc(label)}</span></span>`;
+}
+
 function renderInbox(emails) {
-  $("#inboxEmpty").classList.toggle("hidden", emails.length > 0);
-  $("#inboxTable tbody").innerHTML = emails
-    .map((e) => `<tr class="click" data-email="${esc(e.id)}">
-      <td class="muted">${fmtTime(e.receivedAt)}</td>
-      <td><b>${esc(e.fromName)}</b><br><span class="muted">${esc(e.from)}</span></td>
-      <td>${esc(e.subject)}${e.intake ? `<br><span class="muted">${esc(e.intake.category.replace(/_/g, " "))}</span>` : ""}</td>
-      <td>${e.attachments.length}</td>
-      <td>${pill(EMAIL_PILL, e.status)}</td></tr>`)
+  for (const f of ["all", "processed", "needs_review", "ignored", "working"])
+    $(`#f-${f}`).textContent = emails.filter((e) => matchesFilter(e, f)).length || "";
+  document.querySelectorAll("#inboxTabs .tab").forEach((t) => t.classList.toggle("active", t.dataset.filter === inboxFilter));
+  const shown = emails.filter((e) => matchesFilter(e, inboxFilter));
+  $("#inboxEmpty").classList.toggle("hidden", shown.length > 0);
+  $("#mailList").innerHTML = shown
+    .map((e) => {
+      const docs = e.attachments.map((a) => state.docs[a.docId]).filter(Boolean);
+      const snippet = e.body.replace(/\s+/g, " ").trim().slice(0, 140);
+      const why = e.status === "ignored" && e.intake ? `<span class="why">Ignored: ${esc(e.intake.category.replace(/_/g, " "))}</span>` : "";
+      return `<div class="mail-row ${e.status}" data-email="${esc(e.id)}">
+        <div class="avatar" style="background:hsl(${hue(e.from)} 55% 92%);color:hsl(${hue(e.from)} 45% 32%)">${esc(initials(e.fromName))}</div>
+        <div class="mail-main">
+          <div class="mail-top"><span class="mail-from">${esc(e.fromName)}</span><span class="mail-addr">${esc(e.from)}</span><span class="mail-time">${shortTime(e.receivedAt)}</span></div>
+          <div class="mail-subject">${esc(e.subject)}</div>
+          <div class="mail-snippet">${esc(snippet)}</div>
+          ${docs.length || why ? `<div class="mail-chips">${docs.map(docChip).join("")}${why}</div>` : ""}
+        </div>
+        <div class="mail-status">${pill(EMAIL_PILL, e.status)}</div>
+      </div>`;
+    })
     .join("");
 }
 
 function openEmail(id) {
   const e = state.emails[id];
   const docs = e.attachments.map((a) => state.docs[a.docId]).filter(Boolean);
+  const i = e.intake;
+  const verdict = !i
+    ? "Not looked at yet. It will be processed on the next automatic check."
+    : i.decision === "ignore"
+      ? `Ignored as ${i.category.replace(/_/g, " ")}. Nothing was filed.`
+      : i.decision === "needs_review"
+        ? "Held for a person to check before anything is opened."
+        : `Client documents${i.sender_person_id ? ` from ${personName(i.sender_person_id)}` : " from an unrecognized sender"}.`;
   $("#drawerBody").innerHTML = `
-    <h2>${esc(e.subject)}</h2>
-    <div class="muted">From ${esc(e.fromName)} &lt;${esc(e.from)}&gt; · ${fmtTime(e.receivedAt)} · ${pill(EMAIL_PILL, e.status)}</div>
+    <div class="d-head">
+      <div class="avatar big" style="background:hsl(${hue(e.from)} 55% 92%);color:hsl(${hue(e.from)} 45% 32%)">${esc(initials(e.fromName))}</div>
+      <div>
+        <h2 style="margin:0">${esc(e.subject)}</h2>
+        <div class="muted">${esc(e.fromName)} &lt;${esc(e.from)}&gt; · ${fmtTime(e.receivedAt)}</div>
+      </div>
+    </div>
     <pre class="body">${esc(e.body)}</pre>
-    <h2>Attachments</h2>
-    ${docs.length ? docs.map((d) => `<div style="margin:6px 0">${esc(d.originalName)} ${pill(DOC_PILL, d.status)}
-      ${d.filing ? `<div class="muted">→ ${esc(folderLabel(d.filing.folder))} / <b>${esc(d.filing.filename)}</b></div>` : ""}
-      <a href="/api/pdf/${encodeURIComponent(d.id)}" target="_blank">open PDF</a></div>`).join("") : '<div class="muted">None</div>'}
-    <h2 style="margin-top:16px">Step 1: keyword rules</h2>
-    <div class="muted">${esc(e.ruleHits.join(", ") || "none")}</div>
-    <h2 style="margin-top:16px">Intake Agent decision</h2>
-    ${e.intake ? `<div class="fields">
-      <div class="field"><div class="l">Decision</div><div class="v">${esc(e.intake.decision)}</div></div>
-      <div class="field"><div class="l">Category</div><div class="v">${esc(e.intake.category)}</div></div>
-      <div class="field"><div class="l">Sender</div><div class="v">${esc(personName(e.intake.sender_person_id))}</div></div>
-      <div class="field"><div class="l">Confidence</div><div class="v">${pct(e.intake.confidence)}</div></div></div>
-      <p>${esc(e.intake.reasoning)}</p>` : '<div class="muted">Not triaged yet.</div>'}
-    <h2>Agent steps</h2>
-    ${traceHtml([...e.trace, ...docs.flatMap((d) => d.trace)])}`;
+    <h3 class="d-label">Attachments</h3>
+    ${docs.length ? `<div class="d-docs">${docs.map((d) => `<div class="d-doc">${docChip(d)}
+      ${d.filing ? `<div class="muted small">Saved as <b>${esc(d.filing.filename)}</b> in ${esc(folderLabel(d.filing.folder))}</div>` : ""}
+      ${d.review ? `<div class="muted small">Why it needs review: ${esc(d.review.reason)}</div>` : ""}
+      <a class="small" href="/api/pdf/${encodeURIComponent(d.id)}" target="_blank">Open PDF ↗</a></div>`).join("")}</div>` : '<div class="muted">No attachments</div>'}
+    <h3 class="d-label">What the AI decided</h3>
+    <div class="verdict">${pill(EMAIL_PILL, e.status)} <span>${esc(verdict)}</span>${i ? `<span class="muted small"> ${pct(i.confidence)} confident</span>` : ""}</div>
+    ${i ? `<p class="muted">${esc(i.reasoning)}</p>` : ""}
+    <details class="ai-details"><summary>Show AI details</summary>
+      <div class="muted small" style="margin:8px 0">Keyword pre-check: ${esc(e.ruleHits.join(", ") || "none")}</div>
+      ${traceHtml([...e.trace, ...docs.flatMap((d) => d.trace)])}
+    </details>`;
   $("#drawer").classList.remove("hidden");
 }
 
@@ -449,6 +507,8 @@ $("#drawerClose").onclick = () => $("#drawer").classList.add("hidden");
 $("#drawer").onclick = (ev) => { if (ev.target.id === "drawer") $("#drawer").classList.add("hidden"); };
 
 document.addEventListener("click", (ev) => {
+  const tab = ev.target.closest("#inboxTabs .tab");
+  if (tab) { inboxFilter = tab.dataset.filter; return render(); }
   const row = ev.target.closest("[data-email]");
   if (row) return openEmail(row.dataset.email);
   const file = ev.target.closest(".tree .file");
