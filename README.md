@@ -80,6 +80,14 @@ rules, privacy rules, ambiguity rules and worked examples. Every agent's system 
 
 Don't commit your edited workflow back to GitHub. It contains your secret.
 
+### One-click test emails
+
+`n8n/send-demo-emails.json` is a second workflow that emails 6 test cases to the demo Gmail with the
+fake PDFs attached (a normal statement, a spouse sending a rollover form, a scanned ID, a statement with
+no name, an ambiguous "R. Patel" 1099 from a CPA, and a phishing "invoice"). Import it, connect the
+same Gmail credential, set `SITE_URL` and `DEMO_GMAIL` at the top of its code step, and click
+**Execute**. The main workflow then picks the emails up within 5 minutes.
+
 ## Run on your own computer (optional)
 
 ```bash

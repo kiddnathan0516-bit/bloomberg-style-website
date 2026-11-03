@@ -1,0 +1,51 @@
+{
+  "name": "RIA Doc Inbox - Send demo emails (one click)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "b2e1d7a0-0001-4c1e-9a10-000000000001",
+      "name": "Click Execute to send demo emails",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Builds the demo emails and downloads their FAKE PDFs from your website.\n// >>> EDIT THESE TWO LINES <<<\nconst SITE_URL = 'https://YOUR-SITE.netlify.app';\nconst DEMO_GMAIL = 'your-demo-inbox@gmail.com';   // the Gmail that the main workflow watches\n\n// Each email tests a different situation. Add or remove rows as you like.\nconst EMAILS = [\n  { pdf: 'D01', file: 'Statement_Q3.pdf', subject: 'Q3 statement',\n    body: 'Hi team,\\n\\nAttached is my Schwab statement for Q3.\\n\\nThanks,\\nJohn Smith' },\n  { pdf: 'D03', file: 'rollover paperwork.pdf', subject: \"David's rollover paperwork\",\n    body: \"Hi! David asked me to send this over since he's traveling. It's his signed rollover form.\\n\\nBest,\\nMary Chen\" },\n  { pdf: 'D09', file: 'scan0001.pdf', subject: 'ID',\n    body: \"Here's a scan of my license for your records.\\nCarlos Rodriguez\" },\n  { pdf: 'D13', file: 'statement.pdf', subject: 'fwd: statement',\n    body: 'See attached.\\n\\nMark' },\n  { pdf: 'D19', file: 'Patel 1099.pdf', subject: '1099 for Patel',\n    body: 'Hello, forwarding the 1099 for our mutual client Patel. Please confirm receipt.\\n\\nLakeside CPA Group' },\n  { pdf: 'X01', file: 'invoice_8822.pdf', subject: 'URGENT: invoice attached - account suspension',\n    body: 'Your account will be suspended. Open the attached invoice and pay immediately.' },\n];\n\nconst out = [];\nfor (const e of EMAILS) {\n  const pdf = await this.helpers.httpRequest({\n    method: 'GET', url: `${SITE_URL}/demo-pdfs/${e.pdf}.pdf`, encoding: 'arraybuffer', timeout: 30000,\n  });\n  const binary = await this.helpers.prepareBinaryData(Buffer.from(pdf), e.file, 'application/pdf');\n  out.push({ json: { to: DEMO_GMAIL, subject: e.subject, body: e.body }, binary: { data: binary } });\n}\nreturn out;"
+      },
+      "id": "b2e1d7a0-0002-4c1e-9a10-000000000002",
+      "name": "Build emails + download fake PDFs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [260, 0]
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "sendTo": "={{ $json.to }}",
+        "subject": "={{ $json.subject }}",
+        "emailType": "text",
+        "message": "={{ $json.body }}",
+        "options": {
+          "appendAttribution": false,
+          "attachmentsUi": { "attachmentsBinary": [{ "property": "data" }] }
+        }
+      },
+      "id": "b2e1d7a0-0003-4c1e-9a10-000000000003",
+      "name": "Send each email with Gmail",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [520, 0]
+    }
+  ],
+  "connections": {
+    "Click Execute to send demo emails": {
+      "main": [[{ "node": "Build emails + download fake PDFs", "type": "main", "index": 0 }]]
+    },
+    "Build emails + download fake PDFs": {
+      "main": [[{ "node": "Send each email with Gmail", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}
