@@ -38,7 +38,8 @@ assert.equal(ev.summary.filename_exact, ev.summary.filename_checked);
 assert.equal(s.docs.D01.classification!.account_last4, "4417", "guardrail keeps last 4 only");
 assert.ok(!s.docs.D01.classification!.reasoning.includes("5583-0219"), "guardrail masks full account numbers");
 assert.ok(s.docs.D09.classification!.used_ocr, "scanned doc used OCR");
-assert.ok(s.docs.D01.trace.some((t) => t.kind === "error" && t.text.includes("create_folder")), "agent got corrected by the folder rule");
+// Work is picked in random order, so check that the rule corrected at least one document
+assert.ok(Object.values(s.docs).some((d) => d.trace.some((t) => t.kind === "error" && t.text.includes("create_folder"))), "agent got corrected by the folder rule");
 assert.equal(s.emails.E23.status, "ignored");
 assert.equal(s.docs.X01.status, "skipped");
 
