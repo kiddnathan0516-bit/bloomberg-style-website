@@ -177,3 +177,17 @@ a.kpi.link:hover { border-color: var(--accent); }
 details.admin > summary { cursor: pointer; font-weight: 600; color: var(--muted); }
 details.admin[open] > summary { margin-bottom: 8px; }
 @media (max-width: 900px) { .kpis.three { grid-template-columns: 1fr; } }
+
+/* automatic scanning status */
+.auto-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
+.auto-head p { margin: 0; max-width: 760px; }
+.auto-status { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 20px; font-weight: 600; white-space: nowrap; background: var(--gray-bg); color: var(--muted); }
+.auto-status .dot { width: 10px; height: 10px; border-radius: 50%; background: currentColor; }
+.auto-status.on { background: var(--green-bg); color: var(--green); }
+.auto-status.on .dot { animation: pulse 2s infinite; }
+.auto-status.late { background: var(--amber-bg); color: var(--amber); }
+#autoDetail { margin-top: 10px; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+details.admin .live { border-top: 1px solid var(--line); margin-top: 16px; padding-top: 16px; }
+details.admin .live h3 { margin: 0 0 4px; font-size: 14px; }
+@media (max-width: 900px) { .auto-head { flex-direction: column; } }

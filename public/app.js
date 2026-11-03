@@ -105,6 +105,8 @@ function render() {
   $("#k-ignored").textContent = emails.filter((e) => e.status === "ignored").length;
   $("#queueInfo").textContent = state.pending.total ? `${state.pending.total} items waiting to be processed.` : "Nothing waiting to be processed.";
 
+  renderAutoStatus();
+
   const d = state.digests[state.digests.length - 1];
   $("#digestBox").innerHTML = d
     ? `<div class="muted">${fmtTime(d.at)}</div><p style="font-size:16px;margin-bottom:0">${esc(d.summary)}</p>`
@@ -115,6 +117,34 @@ function render() {
   if (v === "files") renderTree(filed);
   if (v === "review") renderReview(review);
   if (v === "activity") renderActivity();
+}
+
+// ---------- automatic scanning status ----------
+function ago(iso) {
+  const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  return m < 1 ? "just now" : m === 1 ? "1 minute ago" : m < 60 ? `${m} minutes ago` : `${Math.round(m / 60)} hours ago`;
+}
+function renderAutoStatus() {
+  const box = $("#autoStatus");
+  const at = state.lastAutomationAt;
+  const lastEmail = Object.values(state.emails).filter((e) => e.source === "gmail").sort((a, b) => b.receivedAt.localeCompare(a.receivedAt))[0];
+  const mail = lastEmail ? ` Last email received ${ago(lastEmail.receivedAt)}: “${lastEmail.subject}” from ${lastEmail.fromName}.` : "";
+  if (!at) {
+    box.className = "auto-status";
+    $("#autoText").textContent = "Automatic scanning: not connected";
+    $("#autoDetail").textContent = "No check-in from n8n yet. Make sure the “Gmail to Netlify” workflow is Active.";
+    return;
+  }
+  const minutes = (Date.now() - new Date(at).getTime()) / 60000;
+  if (minutes <= 12) {
+    box.className = "auto-status on";
+    $("#autoText").textContent = "Automatic scanning: ON";
+    $("#autoDetail").textContent = `Checks every 5 minutes. Last check ${ago(at)}.${mail}`;
+  } else {
+    box.className = "auto-status late";
+    $("#autoText").textContent = "Automatic scanning: paused?";
+    $("#autoDetail").textContent = `No check-in for ${ago(at).replace(" ago", "")}. Is the “Gmail to Netlify” workflow in n8n still Active?${mail}`;
+  }
 }
 
 // ---------- inbox ----------

@@ -32,6 +32,12 @@ function allowed(req: Request, needs: "passcode" | "automation") {
   return needs === "automation" ? secretOk || (!!givenPass && passOk) : passOk || secretOk;
 }
 
+// n8n calls in with the secret. Each call is remembered as a "heartbeat", so the
+// Dashboard can show that automatic scanning is running.
+const fromAutomation = (req: Request) =>
+  !!process.env.INTAKE_SECRET && req.headers.get("x-intake-secret") === process.env.INTAKE_SECRET;
+const heartbeat = () => store().setJSON("heartbeat", { at: new Date().toISOString() });
+
 export default async (req: Request) => {
   const url = new URL(req.url);
   const route = url.pathname.replace(/^\/api\/?/, "");
@@ -39,7 +45,8 @@ export default async (req: Request) => {
   try {
     if (method === "GET" && route === "state") {
       const s = await loadState();
-      return json({ ...s, pending: pendingCounts(s), model: MODEL, passcodeRequired: !!process.env.DEMO_PASSCODE });
+      const hb = await store().getJSON<{ at: string }>("heartbeat");
+      return json({ ...s, pending: pendingCounts(s), model: MODEL, passcodeRequired: !!process.env.DEMO_PASSCODE, lastAutomationAt: hb?.at ?? null });
     }
     if (method === "GET" && route === "health") {
       // Open /api/health in a browser to check the setup. Never shows the secret values themselves.
@@ -77,10 +84,12 @@ export default async (req: Request) => {
 
     if (route === "intake") {
       if (!allowed(req, "automation")) return json({ error: "bad or missing x-intake-secret" }, 401);
+      if (fromAutomation(req)) await heartbeat();
       return json(await ingestEmail(body, "gmail"));
     }
     if (route === "work") {
       if (!allowed(req, "passcode")) return json({ error: "wrong passcode" }, 401);
+      if (fromAutomation(req)) await heartbeat();
       return json(await workOnce());
     }
     if (route === "digest") {
