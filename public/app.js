@@ -393,6 +393,7 @@ async function liveDemo() {
   if (running) return;
   if (!confirm("Run the live demo? This clears the current data and emails 6 test documents to the demo Gmail.")) return;
   const status = $("#liveStatus");
+  $("#demoPanel").classList.remove("hidden");
   $("#liveBtn").disabled = true;
   let step = 1;
   try {

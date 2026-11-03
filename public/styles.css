@@ -191,3 +191,7 @@ details.admin[open] > summary { margin-bottom: 8px; }
 details.admin .live { border-top: 1px solid var(--line); margin-top: 16px; padding-top: 16px; }
 details.admin .live h3 { margin: 0 0 4px; font-size: 14px; }
 @media (max-width: 900px) { .auto-head { flex-direction: column; } }
+
+.auto-side { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.demo-panel { border-top: 1px solid var(--line); margin-top: 16px; padding-top: 4px; }
+@media (max-width: 900px) { .auto-side { align-items: stretch; } }

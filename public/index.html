@@ -46,9 +46,21 @@
             <h2>Client document inbox</h2>
             <p class="muted">The firm’s inbox is checked every 5 minutes. New client documents are read, matched to the right client and filed. Anything uncertain waits for your review.</p>
           </div>
-          <div class="auto-status" id="autoStatus"><span class="dot"></span><span id="autoText">Checking…</span></div>
+          <div class="auto-side">
+            <div class="auto-status" id="autoStatus"><span class="dot"></span><span id="autoText">Checking…</span></div>
+            <button class="primary big" id="liveBtn" title="Emails 6 test documents to the firm’s inbox and processes them now">▶ Run demo</button>
+          </div>
         </div>
         <div class="muted" id="autoDetail"></div>
+        <div id="demoPanel" class="demo-panel hidden">
+          <ol class="stepper" id="stepper">
+          <li data-step="1"><b>Emails sent</b><span>Clients email their documents</span></li>
+          <li data-step="2"><b>Emails received</b><span>New mail is picked up from the inbox</span></li>
+          <li data-step="3"><b>Sorting</b><span>Each document is read, matched to a client and filed</span></li>
+          <li data-step="4"><b>Summary</b><span>Today’s summary is ready</span></li>
+        </ol>
+          <div id="liveStatus" class="muted"></div>
+        </div>
       </div>
 
       <div class="kpis three">
@@ -72,22 +84,7 @@
           <button class="danger" id="resetBtn">Reset</button>
         </div>
         <div class="muted" id="queueInfo"></div>
-      <div class="live">
-        <div class="live-head">
-          <div>
-            <h3>Presentation demo</h3>
-            <p class="muted">Clears the data and emails 6 test documents to the firm’s inbox, so you don’t have to wait for real mail.</p>
-          </div>
-          <button class="primary big" id="liveBtn">▶ Run live demo</button>
-        </div>
-        <ol class="stepper" id="stepper">
-          <li data-step="1"><b>Emails sent</b><span>Clients email their documents</span></li>
-          <li data-step="2"><b>Emails received</b><span>New mail is picked up from the inbox</span></li>
-          <li data-step="3"><b>Sorting</b><span>Each document is read, matched to a client and filed</span></li>
-          <li data-step="4"><b>Summary</b><span>Today’s summary is ready</span></li>
-        </ol>
-        <div id="liveStatus" class="muted"></div>
-      </div>
+      
 
         <div id="progress" class="progress hidden">
           <div class="bar"><div id="barFill"></div></div>
