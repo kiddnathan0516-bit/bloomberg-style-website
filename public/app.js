@@ -212,7 +212,7 @@ function renderInbox(emails) {
     .map((e) => {
       const docs = e.attachments.map((a) => state.docs[a.docId]).filter(Boolean);
       const snippet = e.body.replace(/\s+/g, " ").trim().slice(0, 140);
-      const why = e.status === "ignored" && e.intake ? `<span class="why">Ignored: ${esc(e.intake.category.replace(/_/g, " "))}</span>` : "";
+      const why = e.status === "ignored" && e.intake ? `<span class="why-tag">${esc(e.intake.category.replace(/_/g, " "))}</span>` : "";
       return `<div class="mail-row ${e.status}" data-email="${esc(e.id)}">
         <div class="avatar" style="background:hsl(${hue(e.from)} 55% 92%);color:hsl(${hue(e.from)} 45% 32%)">${esc(initials(e.fromName))}</div>
         <div class="mail-main">
@@ -271,14 +271,33 @@ const FOLDER_ORDER = ["Statements", "Tax Documents", "Financial Statements", "In
 const monthLabel = (ym) => { const [y, m] = (ym || "").split("-"); return y && m ? new Date(+y, +m - 1, 1).toLocaleDateString([], { month: "short", year: "numeric" }) : "—"; };
 const shortHH = (name) => (name || "").replace(/ Household$/, "");
 
+// One color per section, so each kind of document is easy to spot.
+const SECTION_COLORS = {
+  "Statements": "blue", "Tax Documents": "purple", "Financial Statements": "teal", "Insurance": "rose",
+  "Pension Statements": "indigo", "Trust Documents": "brown", "Rollovers & Transfers": "orange",
+  "Beneficiary Forms": "green", "Account Applications": "slate", "Onboarding": "gold",
+  "Risk Questionnaires": "cyan", "Identification": "gray", "Other": "gray",
+};
+const sectionColor = (folder) => SECTION_COLORS[folder] || "gray";
+
+// Show the standardized filename in color-coded parts: date · client · source · type.
+function prettyFilename(name) {
+  const m = /^(\d{4}-\d{2})_([A-Za-z]+-[A-Za-z]+)_([A-Za-z]+)_([A-Za-z0-9]+)((?:_\d+)?)\.pdf$/.exec(name);
+  if (!m) return `<span class="fn-client">${esc(name)}</span>`;
+  return `<span class="fn-date">${m[1]}</span><span class="fn-sep">_</span><span class="fn-client">${esc(m[2])}</span><span class="fn-sep">_</span><span class="fn-source">${esc(m[3])}</span><span class="fn-sep">_</span><span class="fn-type">${esc(m[4])}${esc(m[5])}</span><span class="fn-sep">.pdf</span>`;
+}
+
 function fileRow(d, who = "", showTag = true) {
   const folder = d.filing.folder.split("/")[2];
-  return `<div class="file-row" data-doc="${esc(d.id)}">
+  const human = d.filing.filed_by === "human";
+  return `<div class="file-row c-${sectionColor(folder)}" data-doc="${esc(d.id)}">
     <span class="pdf big">PDF</span>
-    <div class="fr-name">${who ? `<div class="fr-who">${esc(who)}</div>` : ""}<div class="fr-file">${esc(d.filing.filename)}</div><div class="fr-orig">${esc(d.originalName)}</div></div>
-    ${showTag ? `<span class="tag">${esc(folder)}</span>` : ""}
-    <span class="fr-meta">${monthLabel(d.classification?.date)}</span>
-    <span class="fr-by">${d.filing.filed_by === "human" ? "Person" : "Auto"}</span>
+    <div class="fr-name">${who ? `<div class="fr-who">${esc(who)}</div>` : ""}
+      <div class="fr-file">${prettyFilename(d.filing.filename)}</div>
+      <div class="fr-orig"><span class="fr-label">Received as</span> ${esc(d.originalName)}</div></div>
+    ${showTag ? `<span class="tag c-${sectionColor(folder)}">${esc(folder)}</span>` : ""}
+    <span class="fr-date">${monthLabel(d.classification?.date)}</span>
+    <span class="fr-by ${human ? "person" : "ai"}">${human ? "Person filed" : "AI filed"}</span>
   </div>`;
 }
 const byFolder = (a, b) =>
@@ -332,7 +351,7 @@ function renderFiles(filed) {
           <span class="muted push">${docs.length} document${docs.length === 1 ? "" : "s"}</span>
         </div>
         ${sections(docs).map(([folder, list]) => `
-          <div class="section-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg><b>${esc(folder)}</b><span>${list.length}</span></div>
+          <div class="section-head c-${sectionColor(folder)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg><b>${esc(folder)}</b><span>${list.length}</span></div>
           ${list.map((d) => fileRow(d, "", false)).join("")}`).join("")}
       </div>`).join("")}`;
 }
