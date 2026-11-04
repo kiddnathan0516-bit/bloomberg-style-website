@@ -24,3 +24,13 @@
   [headers.values]
     Content-Security-Policy = "sandbox"
     Content-Disposition = "attachment"
+
+# Always check for the newest page, script and styles (no stale design after an update).
+[[headers]]
+  for = "/"
+  [headers.values]
+    Cache-Control = "no-cache"
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "no-cache"

@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit",
     "test": "tsx scripts/test-offline.ts",
     "eval": "tsx scripts/eval.ts",
-    "build": "rm -rf public/demo-pdfs && cp -r seed/data/pdfs public/demo-pdfs && cp seed/data/demo-emails.json public/demo-emails.json",
+    "build": "rm -rf public/demo-pdfs && cp -r seed/data/pdfs public/demo-pdfs && cp seed/data/demo-emails.json public/demo-emails.json && sed -i \"s/__BUILD__/$(date +%s)/g\" public/index.html",
     "dev": "tsx scripts/dev-server.ts"
   },
   "dependencies": {

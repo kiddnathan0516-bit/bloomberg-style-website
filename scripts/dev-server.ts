@@ -44,6 +44,7 @@ http
       return;
     }
     res.writeHead(200, { ...SITE_HEADERS, "content-type": TYPES[path.extname(file)] || "application/octet-stream" });
+    if (file.endsWith(".html")) return void res.end(fs.readFileSync(file, "utf8").replaceAll("__BUILD__", String(Date.now())));
     fs.createReadStream(file).pipe(res);
   })
   .listen(PORT, () => console.log(`RIA Doc Inbox running at http://localhost:${PORT}${process.env.MOCK_LLM ? " (MOCK model)" : ""}`));
