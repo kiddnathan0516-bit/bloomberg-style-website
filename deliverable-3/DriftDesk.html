@@ -1,0 +1,829 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DriftDesk</title>
+<style>
+:root{
+  --bg:#000;--panel:#0b0b0b;--panel2:#121212;--line:#2b2b2b;
+  --amber:#ffa028;--amber-dim:#a8681a;--text:#e8e8e8;--muted:#8e8e8e;
+  --green:#33d17a;--red:#ff5a4f;--yellow:#ffd23f;--blue:#59a8ff;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono","Courier New",monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--mono);font-size:13px;line-height:1.35}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.up{color:var(--green)}.dn{color:var(--red)}.muted{color:var(--muted)}.amber{color:var(--amber)}
+/* top bar */
+.top{display:flex;align-items:center;gap:14px;padding:6px 12px;background:#1a1a1a;border-bottom:2px solid var(--amber);flex-wrap:wrap}
+.brand{font-weight:700;color:#000;background:var(--amber);padding:2px 8px;letter-spacing:1px}
+.brand-sub{color:var(--amber)}
+.sim{background:var(--red);color:#fff;font-weight:700;padding:2px 8px;letter-spacing:.5px}
+.top .sp{flex:1}
+#clock{color:var(--yellow)}
+.livebtn{background:none;border:1px solid var(--line);padding:2px 8px;cursor:pointer}
+.livebtn .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--muted);margin-right:6px}
+.livebtn.on .dot{background:var(--green);box-shadow:0 0 6px var(--green)}
+/* command line */
+.cmdbar{display:flex;align-items:center;gap:8px;padding:6px 12px;background:#0f0f0f;border-bottom:1px solid var(--line)}
+.cmdbar label{color:var(--amber);font-weight:700}
+#cmd{flex:1;min-width:0;background:#000;border:1px solid var(--amber-dim);color:var(--yellow);padding:6px 8px;text-transform:uppercase;outline:none}
+#cmd:focus{border-color:var(--amber);box-shadow:0 0 0 1px var(--amber)}
+.go{background:var(--green);color:#000;border:0;padding:6px 12px;font-weight:700;cursor:pointer}
+/* function keys */
+.fkeys{display:flex;gap:4px;padding:6px 12px;background:#0a0a0a;border-bottom:1px solid var(--line);overflow-x:auto}
+.fkeys button{background:#1d1d1d;border:1px solid #333;color:var(--amber);padding:4px 10px;cursor:pointer;white-space:nowrap}
+.fkeys button b{color:#000;background:var(--amber);padding:0 4px;margin-right:6px}
+.fkeys button.active{background:var(--amber);color:#000}
+.fkeys button.active b{background:#000;color:var(--amber)}
+/* layout */
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:10px;padding:10px 12px 60px}
+@media (max-width:980px){.layout{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--panel);border:1px solid var(--line);margin-bottom:10px}
+.ph{background:#1d1d1d;color:var(--amber);font-weight:700;padding:5px 8px;display:flex;justify-content:space-between;align-items:center;gap:8px;border-bottom:1px solid var(--line);text-transform:uppercase;letter-spacing:.5px;flex-wrap:wrap}
+.ph .r{color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0}
+.pb{padding:8px}
+h1.scr{margin:0 0 8px;font-size:15px;color:var(--amber);display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+h1.scr small{color:var(--muted);font-weight:400;font-size:12px}
+/* KPI */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:6px;margin-bottom:10px}
+.kpi{background:var(--panel2);border:1px solid var(--line);padding:6px 8px}
+.kpi .k{color:var(--muted);font-size:11px;text-transform:uppercase}
+.kpi .v{font-size:18px;color:var(--text);font-weight:700;margin-top:2px}
+.kpi.bad .v{color:var(--red)}.kpi.warn .v{color:var(--yellow)}.kpi.good .v{color:var(--green)}
+/* tables */
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%}
+th,td{padding:4px 7px;border-bottom:1px solid #1e1e1e;text-align:left;vertical-align:middle}
+th{color:var(--amber);font-weight:700;background:#141414;position:sticky;top:0;white-space:nowrap}
+th button{background:none;border:0;color:inherit;font-weight:700;cursor:pointer;padding:0}
+tbody tr:nth-child(even){background:#070707}
+tbody tr.click{cursor:pointer}
+tbody tr.click:hover{background:#2a1d08}
+.link{background:none;border:0;color:var(--blue);cursor:pointer;padding:0;text-align:left}
+.link:hover{text-decoration:underline}
+/* badges */
+.b{display:inline-block;padding:0 5px;font-size:11px;font-weight:700;margin-right:3px;border:1px solid}
+.b.breach{color:#000;background:var(--red);border-color:var(--red)}
+.b.watch{color:#000;background:var(--yellow);border-color:var(--yellow)}
+.b.ok{color:#000;background:var(--green);border-color:var(--green)}
+.b.flag{color:var(--blue);border-color:var(--blue)}
+.b.rmd{color:var(--yellow);border-color:var(--yellow)}
+.b.stg{color:var(--amber);border-color:var(--amber)}
+.b.filled{color:#000;background:var(--green);border-color:var(--green)}
+.b.cancel{color:var(--muted);border-color:var(--muted)}
+.b.rej{color:var(--red);border-color:var(--red)}
+/* buttons */
+.btn{background:#1f1f1f;border:1px solid var(--amber-dim);color:var(--amber);padding:5px 10px;cursor:pointer;font-weight:700}
+.btn:hover{background:#2c1f0a}
+.btn.pri{background:var(--amber);color:#000;border-color:var(--amber)}
+.btn.pri:hover{background:#ffb653}
+.btn.go2{background:var(--green);color:#000;border-color:var(--green)}
+.btn.danger{border-color:var(--red);color:var(--red)}
+.btn.sm{padding:2px 7px;font-weight:400}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.row.sp{justify-content:space-between}
+.seg button{background:#151515;border:1px solid #333;color:var(--muted);padding:3px 9px;cursor:pointer}
+.seg button.on{color:#000;background:var(--amber);border-color:var(--amber)}
+input.f,select.f,textarea.f{background:#000;border:1px solid #3a3a3a;color:var(--text);padding:4px 6px}
+input.f:focus,select.f:focus,textarea.f:focus{outline:1px solid var(--amber)}
+textarea.f{width:100%;min-height:54px;resize:vertical}
+/* allocation bars */
+.alloc{display:grid;grid-template-columns:150px minmax(0,1fr) 70px 70px 70px;gap:4px 8px;align-items:center}
+.alloc .hd{color:var(--amber);font-weight:700}
+.track{position:relative;height:14px;background:#161616;border:1px solid #222}
+.fill{position:absolute;left:0;top:0;bottom:0;background:var(--amber-dim)}
+.fill.over{background:#8a2a24}.fill.under{background:#24508a}
+.tmark{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--yellow)}
+@media (max-width:620px){.alloc{grid-template-columns:90px minmax(0,1fr) 54px 54px 54px;font-size:11px}}
+/* heatmap */
+.heat td.c{text-align:center;font-variant-numeric:tabular-nums;cursor:pointer;min-width:56px}
+.legend{display:flex;gap:10px;align-items:center;color:var(--muted);font-size:11px;flex-wrap:wrap}
+.sw{display:inline-block;width:14px;height:10px;vertical-align:middle;margin-right:4px}
+/* side */
+.tape td{padding:3px 6px}
+.alert{padding:5px 8px;border-bottom:1px solid #1d1d1d;cursor:pointer}
+.alert:hover{background:#1a1205}
+.alert .t{font-size:11px;color:var(--muted)}
+.notice{border:1px dashed var(--amber-dim);padding:8px;color:var(--muted);margin-bottom:10px}
+.notice b{color:var(--amber)}
+/* status bar */
+.status{position:fixed;left:0;right:0;bottom:0;background:#1a0000;border-top:1px solid var(--red);color:#ffb3ad;padding:5px 12px;font-size:11px;z-index:5}
+.status b{color:#fff}
+#toast{position:fixed;right:14px;bottom:44px;background:var(--amber);color:#000;padding:8px 12px;font-weight:700;max-width:420px;display:none;z-index:10;box-shadow:0 4px 18px rgba(0,0,0,.6)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:760px){.grid2{grid-template-columns:1fr}}
+.slider{display:grid;grid-template-columns:150px 1fr 60px;gap:8px;align-items:center;margin:6px 0}
+input[type=range]{accent-color:var(--amber);width:100%}
+.pass{color:var(--green);font-weight:700}.fail{color:var(--red);font-weight:700}
+kbd{border:1px solid #444;padding:0 4px;color:var(--yellow)}
+details summary{cursor:pointer;color:var(--amber);padding:4px 0}
+</style>
+</head>
+<body>
+<header class="top">
+  <span class="brand">DRIFTDESK</span>
+  <span class="brand-sub">Portfolio Rebalancing &amp; RMD Terminal for Independent Advisors</span>
+  <span class="sim" title="All clients, accounts, funds and prices in this prototype are fictitious">SIMULATED DATA</span>
+  <span class="sp"></span>
+  <button class="livebtn" id="liveBtn" data-act="live" title="Turn the simulated market feed on or off"><span class="dot"></span><span id="liveTxt">SIM FEED</span></button>
+  <span id="clock"></span>
+</header>
+
+<form class="cmdbar" id="cmdForm" autocomplete="off">
+  <label for="cmd">CMD&gt;</label>
+  <input id="cmd" list="cmdlist" placeholder="Type a function (BOOK, DRFT, RMD...) or a client name, then press GO   ·   press / to focus" spellcheck="false">
+  <datalist id="cmdlist"></datalist>
+  <button class="go" type="submit">GO</button>
+</form>
+
+<nav class="fkeys" id="fkeys" aria-label="Functions"></nav>
+
+<div class="layout">
+  <main id="screen" aria-live="polite"></main>
+  <aside>
+    <div class="panel">
+      <div class="ph">Market tape <span class="r">sim · fictional funds</span></div>
+      <div class="tw"><table class="tape" id="tape"></table></div>
+    </div>
+    <div class="panel">
+      <div class="ph">Alerts <span class="r" id="alertCount"></span></div>
+      <div id="alerts"></div>
+    </div>
+  </aside>
+</div>
+
+<div class="status"><b>SIMULATED DATA:</b> every client, account, fund (Z-tickers) and price is fictitious; prices are a random walk. Educational prototype, not investment or tax advice. Assumed tax rates: long-term 15%, short-term 32%.</div>
+<div id="toast" role="status"></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ================= constants ================= */
+const STORE_KEY='driftdesk.v1';
+const LT_RATE=0.15, ST_RATE=0.32, MIN_TRADE=100, RMD_AGE=73;
+const TLH_MIN_LOSS=500, TLH_MIN_PCT=-0.05;
+const ASSETS=[
+  {id:'ZLC', name:'US Large Cap Equity',  cls:'Equity',       px:142.30, vol:0.010},
+  {id:'ZSC', name:'US Small Cap Equity',  cls:'Equity',       px:68.15,  vol:0.014},
+  {id:'ZIN', name:'Intl Developed Equity',cls:'Equity',       px:54.80,  vol:0.011},
+  {id:'ZEM', name:'Emerging Mkts Equity', cls:'Equity',       px:41.25,  vol:0.016},
+  {id:'ZBD', name:'Core Bond',            cls:'Fixed Income', px:96.40,  vol:0.003},
+  {id:'ZST', name:'Short-Term Treasury',  cls:'Fixed Income', px:49.90,  vol:0.001},
+  {id:'CASH',name:'Cash / Money Market',  cls:'Cash',         px:1,      vol:0},
+];
+const AMAP=Object.fromEntries(ASSETS.map(a=>[a.id,a]));
+const EQ=new Set(['ZLC','ZSC','ZIN','ZEM']), FI=new Set(['ZBD','ZST']);
+const MODELS={
+  Conservative:{ZLC:20,ZSC:3, ZIN:10,ZEM:2, ZBD:45,ZST:15,CASH:5},
+  Balanced:    {ZLC:35,ZSC:6, ZIN:14,ZEM:5, ZBD:30,ZST:7, CASH:3},
+  Growth:      {ZLC:45,ZSC:9, ZIN:18,ZEM:8, ZBD:15,ZST:3, CASH:2},
+  Aggressive:  {ZLC:52,ZSC:12,ZIN:20,ZEM:12,ZBD:2, ZST:0, CASH:2},
+};
+// IRS Uniform Lifetime Table (subset)
+const RMD_DIV={72:27.4,73:26.5,74:25.5,75:24.6,76:23.7,77:22.9,78:22.0,79:21.1,80:20.2,81:19.4,82:18.5,83:17.7,84:16.8,85:16.0,86:15.2,87:14.4,88:13.7,89:12.9,90:12.2,91:11.5,92:10.8,93:10.1,94:9.5,95:8.9};
+const SCREENS=[
+  ['BOOK','Client Book'],['DRFT','Drift Map'],['HH','Household'],['TRD','Trade Blotter'],
+  ['RMD','RMD Tracker'],['TLH','Tax-Loss'],['STRS','Stress Test'],['MODL','Models'],['LOG','Activity'],['HELP','Help'],['TEST','Self-Test']
+];
+const PROFILES={
+  equityRun:{mult:{ZLC:1.28,ZSC:1.2,ZIN:1.1,ZEM:1.05,ZBD:.72,ZST:.8,CASH:.7},noise:.12},
+  equityRunStrong:{mult:{ZLC:1.4,ZSC:1.15,ZIN:.85,ZEM:.55},noise:.1},
+  bondHeavy:{mult:{ZLC:.8,ZSC:.8,ZIN:.78,ZEM:.8,ZBD:1.35,ZST:1.3},noise:.1},
+  cash:{mult:{CASH:6},noise:.1},
+  tlh:{mult:{ZEM:.85,ZIN:.92},noise:.1,lossAssets:['ZEM','ZIN','ZBD']},
+  rmd:{noise:.14},
+  ok:{noise:.04},
+  mild:{mult:{ZLC:1.09,ZBD:.92},noise:.06},
+};
+const A=(type,owner,age,share,rmdTakenPct)=>({type,owner,age,share,rmdTakenPct});
+const HH_SEED=[
+  {id:'H01',name:'Alvarez Household',advisor:'J. Park',model:'Balanced',value:1850000,band:5,profile:'equityRun',accounts:[A('Taxable','Marco & Lucia Alvarez (Joint)',61,.45),A('Traditional IRA','Marco Alvarez',61,.35),A('Roth IRA','Lucia Alvarez',58,.20)]},
+  {id:'H02',name:'Brennan, Ruth',advisor:'S. Moreno',model:'Conservative',value:920000,band:5,profile:'rmd',accounts:[A('Traditional IRA','Ruth Brennan',76,.62,.4),A('Taxable','Ruth Brennan',76,.38)]},
+  {id:'H03',name:'Chen-Whitaker Household',advisor:'J. Park',model:'Growth',value:2400000,band:5,profile:'cash',accounts:[A('Taxable','David & Mei (Joint)',47,.5),A('Traditional IRA','David Whitaker (rollover)',47,.32),A('Roth IRA','Mei Chen',45,.18)]},
+  {id:'H04',name:'Delacroix, Andre',advisor:'S. Moreno',model:'Aggressive',value:640000,band:6,profile:'tlh',accounts:[A('Taxable','Andre Delacroix',34,.6),A('Roth IRA','Andre Delacroix',34,.4)]},
+  {id:'H05',name:'Eriksen Family Trust',advisor:'J. Park',model:'Balanced',value:3100000,band:5,profile:'equityRun',accounts:[A('Taxable','Eriksen Family Trust',74,.5),A('Traditional IRA','Karl Eriksen',74,.32,0),A('Traditional IRA','Ingrid Eriksen',72,.18)]},
+  {id:'H06',name:'Faulkner Household',advisor:'S. Moreno',model:'Conservative',value:1200000,band:5,profile:'ok',accounts:[A('Traditional IRA','Grant Faulkner',69,.55),A('Taxable','Grant & Ellen Faulkner (Joint)',69,.45)]},
+  {id:'H07',name:'Garza, Sofia',advisor:'J. Park',model:'Growth',value:780000,band:5,profile:'ok',accounts:[A('Taxable','Sofia Garza',39,.55),A('Roth IRA','Sofia Garza',39,.45)]},
+  {id:'H08',name:'Hollis Household',advisor:'S. Moreno',model:'Balanced',value:1550000,band:5,profile:'bondHeavy',accounts:[A('Taxable','Walter & June Hollis (Joint)',81,.4),A('Traditional IRA','Walter Hollis',81,.45,1),A('Roth IRA','June Hollis',78,.15)]},
+  {id:'H09',name:'Ibarra-Kim Household',advisor:'J. Park',model:'Aggressive',value:2050000,band:6,profile:'equityRunStrong',accounts:[A('Taxable','Luis & Hana (Joint)',52,.5),A('Roth IRA','Hana Kim',50,.2),A('Traditional IRA','Luis Ibarra',52,.3)]},
+  {id:'H10',name:'Jorgensen, Helen',advisor:'S. Moreno',model:'Conservative',value:510000,band:5,profile:'rmd',accounts:[A('Traditional IRA','Helen Jorgensen',88,.7,.25),A('Taxable','Helen Jorgensen',88,.3)]},
+  {id:'H11',name:'Kowalski Household',advisor:'J. Park',model:'Growth',value:1350000,band:5,profile:'tlh',accounts:[A('Taxable','Piotr & Anna (Joint)',44,.55),A('Traditional IRA','Piotr Kowalski',44,.3),A('Roth IRA','Anna Kowalski',42,.15)]},
+  {id:'H12',name:'Lindqvist Trust',advisor:'S. Moreno',model:'Balanced',value:2700000,band:5,profile:'mild',accounts:[A('Taxable','Lindqvist Revocable Trust',66,.55),A('Traditional IRA','Erik Lindqvist',66,.3),A('Roth IRA','Maja Lindqvist',63,.15)]},
+];
+
+/* ================= helpers ================= */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=(v,d=0)=>(v<0?'-':'')+'$'+Math.abs(v).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+const compact=v=>{const a=Math.abs(v),s=v<0?'-':'';if(a>=1e9)return s+'$'+(a/1e9).toFixed(2)+'B';if(a>=1e6)return s+'$'+(a/1e6).toFixed(2)+'M';if(a>=1e3)return s+'$'+(a/1e3).toFixed(1)+'K';return s+'$'+a.toFixed(0)};
+const pp=v=>{const r=Math.round(v*10)/10;return r===0?'0.0':(r>0?'+':'')+r.toFixed(1)};
+const pct=(v,d=1)=>(v*100).toFixed(d)+'%';
+const sh=v=>v.toLocaleString('en-US',{minimumFractionDigits:3,maximumFractionDigits:3});
+const todayISO=()=>new Date().toISOString().slice(0,10);
+const timeStr=ts=>new Date(ts).toLocaleTimeString('en-US',{hour12:false});
+const dtStr=ts=>new Date(ts).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false});
+const sgn=v=>v>0.0001?'up':(v<-0.0001?'dn':'');
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function gauss(r=Math.random){let u=0,v=0;while(!u)u=r();while(!v)v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+const clone=o=>JSON.parse(JSON.stringify(o));
+function daysBetween(a,b){return Math.round((b-a)/86400000)}
+function isLongTerm(dateStr){return daysBetween(new Date(dateStr+'T00:00:00'),new Date())>365}
+
+/* ================= state ================= */
+let S;
+function newLotId(){return 'L'+(S.seq++)}
+
+function buildInitialState(){
+  const rng=mulberry32(20261117);
+  const st={v:1,seq:1000,prices:{},open:{},hist:{},households:[],batches:[],log:[],notes:{},live:true,
+            view:{screen:'BOOK',hh:null,sort:{key:'drift',dir:-1},filter:'ALL',q:'',shock:{eq:-20,bd:-4}}};
+  S=st; // newLotId needs S
+  ASSETS.forEach(a=>{
+    st.prices[a.id]=a.px; st.open[a.id]=a.px;
+    const h=[a.px]; let p=a.px;
+    for(let i=0;i<59;i++){p=p/(1+gauss(rng)*a.vol*0.6);h.unshift(+p.toFixed(4));}
+    st.hist[a.id]=h;
+  });
+  const start=new Date('2015-01-05').getTime(), end=new Date(Date.now()-20*86400000).getTime();
+  HH_SEED.forEach(seed=>{
+    const prof=PROFILES[seed.profile]||{noise:.1}, mult=prof.mult||{}, tgt=MODELS[seed.model];
+    let w={},sum=0;
+    ASSETS.forEach(a=>{w[a.id]=tgt[a.id]*(mult[a.id]||1)*(1+(rng()-.5)*prof.noise);sum+=w[a.id];});
+    ASSETS.forEach(a=>w[a.id]/=sum);
+    const accounts=seed.accounts.map((ac,i)=>({id:seed.id+'-A'+(i+1),type:ac.type,owner:ac.owner,age:ac.age,lots:[],rmdTakenPct:ac.rmdTakenPct}));
+    ASSETS.forEach(a=>{
+      const dollars=seed.value*w[a.id]; if(dollars<1)return;
+      // asset location tilt: bonds lean to Traditional IRA, equities lean to Roth
+      const f=seed.accounts.map(ac=>{let t=ac.share*(0.6+rng()*0.8);
+        if(FI.has(a.id)&&ac.type==='Traditional IRA')t*=1.7;
+        if(EQ.has(a.id)&&ac.type==='Roth IRA')t*=1.5;
+        if(a.id==='CASH'&&seed.profile==='cash'&&ac.type==='Taxable')t*=4;
+        return t;});
+      const fs=f.reduce((x,y)=>x+y,0);
+      accounts.forEach((acc,i)=>{
+        const d=dollars*f[i]/fs; if(d<50)return;
+        if(a.id==='CASH'){acc.lots.push({id:newLotId(),asset:'CASH',shares:+d.toFixed(2),cost:1,date:'2024-01-02'});return;}
+        const n=(d>25000&&rng()<.65)?2:1;
+        for(let k=0;k<n;k++){
+          const part=n===1?d:(k===0?d*(.45+rng()*.25):0);
+          const val=n===1?d:(k===0?part:d-acc.lots.filter(l=>l.asset===a.id).reduce((s,l)=>s+l.shares*a.px,0));
+          let cf;
+          if((prof.lossAssets||[]).includes(a.id)&&acc.type==='Taxable')cf=1.12+rng()*.25;
+          else if(EQ.has(a.id))cf=.55+rng()*.5;
+          else cf=.95+rng()*.14;
+          const recent=rng()<.2;
+          const t=recent?end-rng()*270*86400000:start+rng()*(end-start-300*86400000);
+          acc.lots.push({id:newLotId(),asset:a.id,shares:+(val/a.px).toFixed(3),cost:+(a.px*cf).toFixed(2),date:new Date(t).toISOString().slice(0,10)});
+        }
+      });
+    });
+    accounts.forEach(acc=>{
+      const v=acc.lots.reduce((s,l)=>s+l.shares*st.prices[l.asset],0);
+      acc.ye=Math.round(v*0.97); // prior year-end balance (simulated)
+      const r=rmdRequired(acc);
+      acc.rmdTaken=r?Math.round(r*(acc.rmdTakenPct||0)):0;
+      delete acc.rmdTakenPct;
+    });
+    st.households.push({id:seed.id,name:seed.name,advisor:seed.advisor,model:seed.model,band:seed.band,accounts});
+  });
+  st.log.push({ts:Date.now(),type:'SYS',msg:'Simulated client book loaded: 12 households, fictional Z-ticker funds.'});
+  return st;
+}
+
+function save(){try{localStorage.setItem(STORE_KEY,JSON.stringify(S))}catch(e){}}
+function load(){
+  try{const raw=localStorage.getItem(STORE_KEY);if(raw){const o=JSON.parse(raw);if(o&&o.v===1&&o.households)return o;}}catch(e){}
+  return null;
+}
+
+/* ================= analytics ================= */
+const getHH=id=>S.households.find(h=>h.id===id);
+function acctValue(acc,prices=S.prices){return acc.lots.reduce((s,l)=>s+l.shares*prices[l.asset],0)}
+function acctCash(acc){return acc.lots.filter(l=>l.asset==='CASH').reduce((s,l)=>s+l.shares,0)}
+function rmdRequired(acc){
+  if(acc.type!=='Traditional IRA'||acc.age<RMD_AGE)return 0;
+  const d=RMD_DIV[Math.min(95,acc.age)]; return d?acc.ye/d:0;
+}
+function rmdInfo(acc){const req=rmdRequired(acc);if(!req)return null;const taken=acc.rmdTaken||0;return{req,taken,remaining:Math.max(0,req-taken),div:RMD_DIV[Math.min(95,acc.age)]}}
+function hhStats(h,prices=S.prices){
+  const by={};ASSETS.forEach(a=>by[a.id]=0);
+  h.accounts.forEach(acc=>acc.lots.forEach(l=>by[l.asset]+=l.shares*prices[l.asset]));
+  const total=Object.values(by).reduce((x,y)=>x+y,0)||1;
+  const tgt=MODELS[h.model],w={},drift={};let maxAbs=0,maxAsset='—';
+  ASSETS.forEach(a=>{w[a.id]=by[a.id]/total;drift[a.id]=w[a.id]*100-tgt[a.id];if(Math.abs(drift[a.id])>maxAbs){maxAbs=Math.abs(drift[a.id]);maxAsset=a.id;}});
+  const status=maxAbs>h.band?'BREACH':(maxAbs>h.band*0.6?'WATCH':'OK');
+  let eqW=0,eqT=0;EQ.forEach(id=>{eqW+=w[id];eqT+=tgt[id];});
+  let rmdRemaining=0;h.accounts.forEach(acc=>{const r=rmdInfo(acc);if(r)rmdRemaining+=r.remaining;});
+  const tlh=tlhLots(h,prices).reduce((s,x)=>s+x.loss,0);
+  return{total,by,w,drift,maxAbs,maxAsset,status,eqW,eqT:eqT/100,cashW:w.CASH,rmdRemaining,tlh};
+}
+function tlhLots(h,prices=S.prices){
+  const out=[];
+  h.accounts.forEach(acc=>{if(acc.type!=='Taxable')return;acc.lots.forEach(l=>{if(l.asset==='CASH')return;
+    const val=l.shares*prices[l.asset],basis=l.shares*l.cost,g=val-basis;
+    if(g<=-TLH_MIN_LOSS&&g/basis<=TLH_MIN_PCT){const lt=isLongTerm(l.date);out.push({h,acc,l,val,basis,loss:g,lt,save:-g*(lt?LT_RATE:ST_RATE)});}});});
+  return out;
+}
+const STATUS_RANK={BREACH:2,WATCH:1,OK:0};
+
+/* ================= rebalancing engine ================= */
+// Lower score = sell first. Losses (tax benefit) -> tax-advantaged (no tax) -> long-term gains (smallest gain first) -> short-term gains last.
+function lotPriority(acc,l,prices){
+  if(l.asset==='CASH')return 0;
+  if(acc.type!=='Taxable')return 0.5;
+  const g=(prices[l.asset]-l.cost)/l.cost;
+  if(g<0)return -1+g;
+  return isLongTerm(l.date)?1+g:10+g;
+}
+function sellReason(acc,l,prices){
+  if(l.asset==='CASH')return 'Use excess cash';
+  if(acc.type!=='Taxable')return 'Tax-free sale ('+acc.type+')';
+  if(prices[l.asset]<l.cost)return 'Harvest loss';
+  return isLongTerm(l.date)?'Long-term gain, lowest-gain lot':'Short-term gain (last resort)';
+}
+function locationRank(assetId,acc){
+  const order=FI.has(assetId)?['Traditional IRA','Taxable','Roth IRA']:EQ.has(assetId)?['Roth IRA','Taxable','Traditional IRA']:['Taxable','Traditional IRA','Roth IRA'];
+  return order.indexOf(acc.type);
+}
+function sellLots(h,assetId,amount,prices,trades,cashMap,filterAcc){
+  let remaining=amount;const cands=[];
+  h.accounts.forEach(acc=>{if(filterAcc&&acc.id!==filterAcc)return;acc.lots.forEach(l=>{if(l.asset===assetId&&l.shares>1e-9)cands.push({acc,l});});});
+  cands.sort((x,y)=>lotPriority(x.acc,x.l,prices)-lotPriority(y.acc,y.l,prices));
+  for(const {acc,l} of cands){
+    if(remaining<=0.005)break;
+    const p=prices[assetId],lotVal=l.shares*p;
+    let shares=Math.min(l.shares,remaining/p);
+    if(lotVal-remaining<0.01)shares=l.shares; // take whole lot
+    shares=Math.min(l.shares,+shares.toFixed(assetId==='CASH'?2:3));
+    if(shares<=0)continue;
+    const amt=shares*p,taxable=acc.type==='Taxable'&&assetId!=='CASH';
+    const gain=taxable?shares*(p-l.cost):0;
+    trades.push({side:'SELL',acct:acc.id,acctType:acc.type,asset:assetId,shares,price:p,amount:amt,lotId:l.id,gain,term:taxable?(isLongTerm(l.date)?'LT':'ST'):'—',reason:sellReason(acc,l,prices)});
+    cashMap[acc.id]=(cashMap[acc.id]||0)+amt;remaining-=amt;
+  }
+  return amount-remaining;
+}
+function summarize(h,trades,prices){
+  let buys=0,sells=0,st=0,lt=0,harvest=0,orders=0;
+  trades.forEach(t=>{if(t.asset!=='CASH')orders++;if(t.side==='BUY'&&t.asset!=='CASH')buys+=t.amount;if(t.side==='SELL'&&t.asset!=='CASH')sells+=t.amount;
+    if(t.term==='ST')st+=t.gain;if(t.term==='LT')lt+=t.gain;if(t.gain<0)harvest+=t.gain;});
+  let nst=st,nlt=lt;
+  if(nst<0&&nlt>0){nlt+=nst;nst=0;if(nlt<0){nst=nlt;nlt=0;}}
+  else if(nlt<0&&nst>0){nst+=nlt;nlt=0;if(nst<0){nlt=nst;nst=0;}}
+  let tax=Math.max(0,nst)*ST_RATE+Math.max(0,nlt)*LT_RATE;
+  const net=nst+nlt; if(net<0)tax=-Math.min(3000,-net)*ST_RATE; // capital-loss deduction vs ordinary income
+  const pre=hhStats(h,prices);
+  const sim=clone(h);applyTradesToHH(sim,trades);
+  const post=hhStats(sim,prices);
+  return{orders,buys,sells,turnover:(buys+sells)/2/pre.total,st,lt,harvest,tax,preMax:pre.maxAbs,postMax:post.maxAbs,preTotal:pre.total,postTotal:post.total};
+}
+function proposeRebalance(h,prices=S.prices,minTrade=MIN_TRADE){
+  const st=hhStats(h,prices),tgt=MODELS[h.model],need={};
+  ASSETS.forEach(a=>need[a.id]=st.total*tgt[a.id]/100-st.by[a.id]);
+  const trades=[],cash={};
+  ASSETS.filter(a=>need[a.id]<-minTrade).sort((a,b)=>need[a.id]-need[b.id]).forEach(a=>sellLots(h,a.id,-need[a.id],prices,trades,cash));
+  const buys=ASSETS.filter(a=>need[a.id]>minTrade&&a.id!=='CASH').sort((a,b)=>need[b.id]-need[a.id]);
+  if(need.CASH>minTrade)buys.push(AMAP.CASH);
+  buys.forEach(a=>{
+    let rem=need[a.id];
+    const accs=h.accounts.filter(acc=>(cash[acc.id]||0)>0.005).sort((x,y)=>locationRank(a.id,x)-locationRank(a.id,y));
+    for(const acc of accs){
+      if(rem<=0.005)break;
+      const amt=Math.min(rem,cash[acc.id]);if(amt<0.01)continue;
+      const p=prices[a.id];
+      trades.push({side:'BUY',acct:acc.id,acctType:acc.type,asset:a.id,shares:+(amt/p).toFixed(a.id==='CASH'?2:6),price:p,amount:amt,gain:0,term:'—',
+        reason:a.id==='CASH'?'Hold as cash':(FI.has(a.id)&&acc.type==='Traditional IRA'?'Bonds placed in tax-deferred acct':(EQ.has(a.id)&&acc.type==='Roth IRA'?'Equity placed in Roth (tax-free growth)':'Restore target weight'))});
+      cash[acc.id]-=amt;rem-=amt;
+    }
+  });
+  // anything left over (small residuals) stays as cash in that account
+  Object.entries(cash).forEach(([id,c])=>{if(c>0.01){const acc=h.accounts.find(a=>a.id===id);trades.push({side:'BUY',acct:id,acctType:acc.type,asset:'CASH',shares:+c.toFixed(2),price:1,amount:+c.toFixed(2),gain:0,term:'—',reason:'Hold as cash'});}});
+  return{hhId:h.id,label:'Rebalance to '+h.model,trades,summary:summarize(h,trades,prices),pricedAt:Date.now()};
+}
+function proposeRmdCash(h,accId,prices=S.prices){
+  const acc=h.accounts.find(a=>a.id===accId);const r=rmdInfo(acc);if(!r)return null;
+  const need=r.remaining-acctCash(acc);
+  if(need<=0.5)return{hhId:h.id,label:'RMD cash raise',trades:[],summary:null,enough:true};
+  const st=hhStats(h,prices),trades=[],cash={};
+  let rem=Math.ceil(need);
+  // sell the most over-weight holdings in this IRA first
+  const held=[...new Set(acc.lots.filter(l=>l.asset!=='CASH').map(l=>l.asset))].sort((a,b)=>st.drift[b]-st.drift[a]);
+  for(const id of held){if(rem<=0.005)break;rem-=sellLots(h,id,rem,prices,trades,cash,acc.id);}
+  trades.forEach(t=>t.reason='Raise cash for RMD · '+t.reason);
+  const raised=cash[acc.id]||0;
+  if(raised>0)trades.push({side:'BUY',acct:acc.id,acctType:acc.type,asset:'CASH',shares:+raised.toFixed(2),price:1,amount:+raised.toFixed(2),gain:0,term:'—',reason:'Hold cash for RMD'});
+  return{hhId:h.id,label:'RMD cash raise · '+acc.owner,trades,summary:summarize(h,trades,prices),pricedAt:Date.now()};
+}
+// Atomic: validates every sell first; mutates only if all are valid.
+function applyTradesToHH(h,trades){
+  const accMap=Object.fromEntries(h.accounts.map(a=>[a.id,a]));const need={};
+  for(const t of trades){
+    if(!accMap[t.acct]||!(t.shares>0))return false;
+    if(t.side==='SELL'){need[t.lotId]=(need[t.lotId]||0)+t.shares;const lot=accMap[t.acct].lots.find(l=>l.id===t.lotId);if(!lot||lot.shares<need[t.lotId]-1e-6)return false;}
+  }
+  for(const t of trades){
+    const acc=accMap[t.acct];
+    if(t.side==='SELL'){const lot=acc.lots.find(l=>l.id===t.lotId);lot.shares=+(lot.shares-t.shares).toFixed(6);if(lot.shares<1e-6)acc.lots.splice(acc.lots.indexOf(lot),1);}
+    else if(t.asset==='CASH'){const c=acc.lots.find(l=>l.asset==='CASH');if(c)c.shares=+(c.shares+t.shares).toFixed(2);else acc.lots.push({id:newLotId(),asset:'CASH',shares:t.shares,cost:1,date:todayISO()});}
+    else acc.lots.push({id:newLotId(),asset:t.asset,shares:t.shares,cost:+t.price.toFixed(4),date:todayISO()});
+  }
+  return true;
+}
+
+/* ================= actions ================= */
+function log(type,msg){S.log.unshift({ts:Date.now(),type,msg});if(S.log.length>300)S.log.length=300;}
+function stage(prop){
+  if(!prop||!prop.trades.length){toast('Nothing to stage: already within target.');return null;}
+  const h=getHH(prop.hhId);
+  S.batches.forEach(b=>{if(b.hhId===prop.hhId&&b.status==='STAGED'){b.status='CANCELED';log('TRD',`${b.id} canceled (replaced by a newer proposal) · ${h.name}`);}});
+  const b={id:'B'+(S.seq++),hhId:prop.hhId,label:prop.label,ts:Date.now(),status:'STAGED',trades:prop.trades,summary:prop.summary};
+  S.batches.unshift(b);
+  log('TRD',`${b.id} staged: ${prop.summary?prop.summary.orders:0} orders · ${h.name} · ${prop.label}`);
+  save();return b;
+}
+function executeBatch(b){
+  if(b.status!=='STAGED')return false;
+  const h=getHH(b.hhId);const ok=applyTradesToHH(h,b.trades);
+  b.status=ok?'FILLED':'REJECTED';b.filledAt=Date.now();
+  log('TRD',ok?`${b.id} filled (simulated) · ${h.name}`:`${b.id} REJECTED: holdings changed since staging · ${h.name}`);
+  return ok;
+}
+function tradesCsv(batches){
+  const q=v=>{const s=String(v);return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s};
+  const rows=[['data_source','batch','status','staged_at','household','account','account_type','side','ticker','shares','price','amount','est_gain','term','reason']];
+  batches.forEach(b=>{const h=getHH(b.hhId)||{name:b.hhId};b.trades.forEach(t=>rows.push(['SIMULATED',b.id,b.status,new Date(b.ts).toISOString(),h.name,t.acct,t.acctType,t.side,t.asset,t.shares,t.price.toFixed(2),t.amount.toFixed(2),t.gain.toFixed(2),t.term,t.reason]));});
+  return rows.map(r=>r.map(q).join(',')).join('\n');
+}
+function download(name,text){
+  const blob=new Blob([text],{type:'text/csv'});const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+let toastT;
+function toast(msg){const t=$('#toast');t.textContent=msg;t.style.display='block';clearTimeout(toastT);toastT=setTimeout(()=>t.style.display='none',3200);}
+
+/* ================= market sim ================= */
+function tick(){
+  const m=gauss()*0.0035;
+  ASSETS.forEach(a=>{if(!a.vol)return;const r=(EQ.has(a.id)?m:m*0.12)+gauss()*a.vol*0.25;
+    S.prices[a.id]=Math.max(0.5,S.prices[a.id]*(1+r));const h=S.hist[a.id];h.push(S.prices[a.id]);if(h.length>60)h.shift();});
+}
+function spark(arr){
+  const w=70,h=18,min=Math.min(...arr),max=Math.max(...arr),rg=max-min||1;
+  const pts=arr.map((v,i)=>`${(i/(arr.length-1)*w).toFixed(1)},${(h-(v-min)/rg*h).toFixed(1)}`).join(' ');
+  const c=arr[arr.length-1]>=arr[0]?'var(--green)':'var(--red)';
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><polyline fill="none" stroke="${c}" stroke-width="1.3" points="${pts}"/></svg>`;
+}
+
+/* ================= rendering: chrome ================= */
+function renderFkeys(){
+  $('#fkeys').innerHTML=SCREENS.map(([c,l],i)=>`<button data-act="go" data-cmd="${c}" class="${S.view.screen===c?'active':''}" title="${l} (key ${i<9?i+1:''})"><b>${c}</b>${l}</button>`).join('');
+}
+function renderTape(){
+  const rows=ASSETS.filter(a=>a.id!=='CASH').map(a=>{const p=S.prices[a.id],c=p/S.open[a.id]-1;
+    return `<tr><td class="amber" title="${esc(a.name)}">${a.id}</td><td class="num">${p.toFixed(2)}</td><td class="num ${sgn(c)}">${(c>=0?'+':'')+(c*100).toFixed(2)}%</td><td>${spark(S.hist[a.id])}</td></tr>`;}).join('');
+  $('#tape').innerHTML=`<thead><tr><th>Fund</th><th class="num">Last</th><th class="num">Chg</th><th>Trend</th></tr></thead><tbody>${rows}</tbody>`;
+}
+function renderAlerts(){
+  const items=[];
+  S.households.forEach(h=>{const s=hhStats(h);if(s.status==='BREACH')items.push({cmd:'HH '+h.id,cls:'breach',t:'DRIFT',m:`${h.name}: ${s.maxAsset} ${pp(s.drift[s.maxAsset])} pp (band ±${h.band})`});});
+  const dl=daysToYearEnd();
+  S.households.forEach(h=>h.accounts.forEach(acc=>{const r=rmdInfo(acc);if(r&&r.remaining>1)items.push({cmd:'RMD',cls:'rmd',t:'RMD',m:`${acc.owner}: ${money(r.remaining)} left · ${dl} days`});}));
+  const tl=S.households.reduce((s,h)=>s+tlhLots(h).length,0);if(tl)items.push({cmd:'TLH',cls:'flag',t:'TLH',m:`${tl} taxable lots with harvestable losses`});
+  const stg=S.batches.filter(b=>b.status==='STAGED').length;if(stg)items.push({cmd:'TRD',cls:'stg',t:'STAGED',m:`${stg} trade batch(es) awaiting execution`});
+  $('#alertCount').textContent=items.length+' open';
+  $('#alerts').innerHTML=items.length?items.map(i=>`<div class="alert" data-act="go" data-cmd="${esc(i.cmd)}" role="button" tabindex="0"><span class="b ${i.cls}">${i.t}</span>${esc(i.m)}</div>`).join(''):'<div class="pb muted">No open alerts. Book is within tolerance.</div>';
+}
+function renderDatalist(){
+  const opts=SCREENS.map(([c,l])=>`<option value="${c}">${l}</option>`).concat(S.households.map(h=>`<option value="HH ${h.id}">${esc(h.name)}</option>`),['LIVE','RESET'].map(c=>`<option value="${c}"></option>`));
+  $('#cmdlist').innerHTML=opts.join('');
+}
+function daysToYearEnd(){const n=new Date();const e=new Date(n.getFullYear(),11,31,23,59);return Math.max(0,Math.ceil((e-n)/86400000));}
+
+/* ================= screens ================= */
+function kpi(k,v,cls=''){return `<div class="kpi ${cls}"><div class="k">${k}</div><div class="v">${v}</div></div>`}
+function statusBadge(s){return `<span class="b ${s==='BREACH'?'breach':s==='WATCH'?'watch':'ok'}">${s}</span>`}
+
+function screenBOOK(){
+  const stats=S.households.map(h=>({h,s:hhStats(h)}));
+  const aum=stats.reduce((x,o)=>x+o.s.total,0),br=stats.filter(o=>o.s.status==='BREACH').length,wa=stats.filter(o=>o.s.status==='WATCH').length;
+  const rmd=stats.reduce((x,o)=>x+o.s.rmdRemaining,0),stg=S.batches.filter(b=>b.status==='STAGED').length;
+  const fl=S.view.filter;
+  return `<h1 class="scr">BOOK <small>Client book overview · click a household to open it</small></h1>
+  ${S.log.length<=1&&!S.batches.length?`<div class="notice"><b>Start here:</b> households in <span class="b breach">BREACH</span> have drifted outside their tolerance band. Open one, press <b>Propose rebalance</b>, then stage and execute the trades in <b>TRD</b>. Type <b>HELP</b> for every function.</div>`:''}
+  <div class="kpis">${kpi('Assets under mgmt',compact(aum))}${kpi('Households',S.households.length)}${kpi('Out of band',br,br?'bad':'good')}${kpi('Watch list',wa,wa?'warn':'')}${kpi('RMD $ outstanding',compact(rmd),rmd>1?'warn':'good')}${kpi('Staged batches',stg)}</div>
+  <div class="panel"><div class="ph">Households <span class="r row">
+    <span class="seg" role="group" aria-label="Filter">${['ALL','BREACH','WATCH','OK'].map(f=>`<button data-act="filter" data-f="${f}" class="${fl===f?'on':''}">${f}</button>`).join('')}</span>
+    <input class="f" id="bookQ" placeholder="search name / advisor" value="${esc(S.view.q)}" aria-label="Search households">
+    <button class="btn sm" data-act="rebalAll" title="Propose and stage rebalances for every household in BREACH">Rebalance all breaches</button>
+  </span></div><div class="tw" id="bookTable">${bookTable()}</div></div>`;
+}
+function bookTable(){
+  const {key,dir}=S.view.sort,q=S.view.q.toLowerCase(),fl=S.view.filter;
+  let rows=S.households.map(h=>({h,s:hhStats(h)})).filter(o=>(fl==='ALL'||o.s.status===fl)&&(!q||o.h.name.toLowerCase().includes(q)||o.h.advisor.toLowerCase().includes(q)||o.h.id.toLowerCase()===q));
+  const val={id:o=>o.h.id,name:o=>o.h.name,model:o=>o.h.model,advisor:o=>o.h.advisor,aum:o=>o.s.total,eq:o=>o.s.eqW-o.s.eqT,cash:o=>o.s.cashW,drift:o=>o.s.maxAbs,status:o=>STATUS_RANK[o.s.status]*100+o.s.maxAbs};
+  rows.sort((a,b)=>{const x=val[key](a),y=val[key](b);return(x>y?1:x<y?-1:0)*dir;});
+  const th=(k,l,n)=>`<th class="${n?'num':''}"><button data-act="sort" data-key="${k}">${l}${key===k?(dir>0?' ▲':' ▼'):''}</button></th>`;
+  const stagedHH=new Set(S.batches.filter(b=>b.status==='STAGED').map(b=>b.hhId));
+  return `<table><thead><tr>${th('id','ID')}${th('name','Household')}${th('advisor','Advisor')}${th('model','Model')}${th('aum','AUM',1)}${th('eq','Equity act / tgt',1)}${th('cash','Cash',1)}${th('drift','Max drift',1)}<th>Flags</th>${th('status','Status')}</tr></thead><tbody>
+  ${rows.map(({h,s})=>`<tr class="click" data-act="go" data-cmd="HH ${h.id}"><td class="amber">${h.id}</td><td><button class="link" data-act="go" data-cmd="HH ${h.id}">${esc(h.name)}</button></td><td>${esc(h.advisor)}</td><td>${h.model}</td>
+  <td class="num">${compact(s.total)}</td><td class="num">${pct(s.eqW)} / ${pct(s.eqT,0)}</td><td class="num">${pct(s.cashW)}</td>
+  <td class="num ${s.status==='BREACH'?'dn':''}">${s.maxAsset} ${pp(s.drift[s.maxAsset])}</td>
+  <td>${s.rmdRemaining>1?'<span class="b rmd">RMD</span>':''}${s.tlh<0?'<span class="b flag">TLH</span>':''}${stagedHH.has(h.id)?'<span class="b stg">STG</span>':''}</td><td>${statusBadge(s.status)}</td></tr>`).join('')||'<tr><td colspan="10" class="muted">No households match.</td></tr>'}
+  </tbody></table>`;
+}
+
+function screenDRFT(){
+  const cell=(d,band)=>{const t=Math.min(1,Math.abs(d)/band);const c=d>0?`rgba(255,90,79,${(0.12+t*0.75).toFixed(2)})`:`rgba(89,168,255,${(0.12+t*0.75).toFixed(2)})`;return `background:${Math.abs(d)<0.05?'transparent':c};${t>=1?'outline:1px solid #fff;outline-offset:-2px;font-weight:700;':''}`;};
+  const rows=S.households.map(h=>({h,s:hhStats(h)})).sort((a,b)=>b.s.maxAbs-a.s.maxAbs);
+  return `<h1 class="scr">DRFT <small>Drift heat map · percentage points away from model target · click a cell to open the household</small></h1>
+  <div class="panel"><div class="ph">Drift by asset class <span class="r legend"><span><span class="sw" style="background:rgba(255,90,79,.8)"></span>overweight (sell)</span><span><span class="sw" style="background:rgba(89,168,255,.8)"></span>underweight (buy)</span><span><span class="sw" style="outline:1px solid #fff;outline-offset:-1px"></span>outside band</span></span></div>
+  <div class="tw"><table class="heat"><thead><tr><th>Household</th><th class="num">Band</th>${ASSETS.map(a=>`<th class="num" title="${esc(a.name)}">${a.id}</th>`).join('')}<th>Status</th></tr></thead><tbody>
+  ${rows.map(({h,s})=>`<tr><td><button class="link" data-act="go" data-cmd="HH ${h.id}">${h.id} ${esc(h.name)}</button></td><td class="num">±${h.band}</td>
+    ${ASSETS.map(a=>`<td class="c" style="${cell(s.drift[a.id],h.band)}" data-act="go" data-cmd="HH ${h.id}" title="${a.id}: actual ${pct(s.w[a.id])} vs target ${MODELS[h.model][a.id]}%">${pp(s.drift[a.id])}</td>`).join('')}<td>${statusBadge(s.status)}</td></tr>`).join('')}
+  </tbody></table></div></div>
+  <div class="row"><button class="btn pri" data-act="rebalAll">Propose &amp; stage rebalances for all BREACH households</button><span class="muted">Each proposal is tax-aware; you still approve execution in TRD.</span></div>`;
+}
+
+function allocBars(h,s){
+  const tgt=MODELS[h.model],scale=60;
+  return `<div class="alloc"><span class="hd">Asset</span><span class="hd">Actual (bar) vs target (yellow tick)</span><span class="hd num">Actual</span><span class="hd num">Target</span><span class="hd num">Drift</span>
+  ${ASSETS.map(a=>{const act=s.w[a.id]*100,d=s.drift[a.id],out=Math.abs(d)>h.band;
+    return `<span title="${esc(a.name)}"><span class="amber">${a.id}</span> <span class="muted">${esc(a.name.split(' ').slice(0,2).join(' '))}</span></span>
+    <span class="track"><span class="fill ${out?(d>0?'over':'under'):''}" style="width:${Math.min(100,act/scale*100).toFixed(1)}%"></span><span class="tmark" style="left:${Math.min(100,tgt[a.id]/scale*100).toFixed(1)}%"></span></span>
+    <span class="num">${act.toFixed(1)}%</span><span class="num muted">${tgt[a.id]}%</span><span class="num ${out?'dn':''}">${pp(d)}</span>`;}).join('')}</div>`;
+}
+function tradeTable(trades){
+  if(!trades.length)return '<p class="muted">No trades needed.</p>';
+  return `<div class="tw"><table><thead><tr><th>Side</th><th>Account</th><th>Fund</th><th class="num">Shares</th><th class="num">Price</th><th class="num">Amount</th><th class="num">Est. gain/loss</th><th>Term</th><th>Why</th></tr></thead><tbody>
+  ${trades.map(t=>`<tr><td class="${t.side==='BUY'?'up':'dn'}">${t.asset==='CASH'?(t.side==='BUY'?'CASH IN':'CASH OUT'):t.side}</td><td>${t.acct} <span class="muted">${esc(t.acctType)}</span></td><td class="amber">${t.asset}</td><td class="num">${t.asset==='CASH'?'—':sh(t.shares)}</td><td class="num">${t.asset==='CASH'?'—':t.price.toFixed(2)}</td><td class="num">${money(t.amount)}</td><td class="num ${sgn(t.gain)}">${t.term==='—'?'—':money(t.gain)}</td><td>${t.term}</td><td class="muted">${esc(t.reason)}</td></tr>`).join('')}
+  </tbody></table></div>`;
+}
+function proposalSummary(s){
+  if(!s)return '';
+  return `<div class="kpis">${kpi('Orders',s.orders)}${kpi('Buys / sells',compact(s.buys)+' / '+compact(s.sells))}${kpi('Turnover',pct(s.turnover))}
+  ${kpi('Realized LT / ST',compact(s.lt)+' / '+compact(s.st))}${kpi('Losses harvested',compact(s.harvest),s.harvest<0?'good':'')}${kpi(s.tax<0?'Est. tax benefit':'Est. tax cost',money(Math.abs(s.tax)),s.tax<0?'good':(s.tax>0?'warn':''))}
+  ${kpi('Max drift',s.preMax.toFixed(1)+' → '+s.postMax.toFixed(1)+' pp',s.postMax<1?'good':'warn')}</div>`;
+}
+function screenHH(){
+  const h=getHH(S.view.hh)||S.households[0];S.view.hh=h.id;
+  const s=hhStats(h),p=S.proposal&&S.proposal.hhId===h.id?S.proposal:null;
+  const idx=S.households.indexOf(h),prev=S.households[(idx-1+S.households.length)%S.households.length],next=S.households[(idx+1)%S.households.length];
+  const staged=S.batches.filter(b=>b.hhId===h.id&&b.status==='STAGED');
+  return `<h1 class="scr">HH ${h.id} <span style="color:var(--text)">${esc(h.name)}</span> ${statusBadge(s.status)} <small>Advisor ${esc(h.advisor)}</small>
+    <span style="flex:1"></span><button class="btn sm" data-act="go" data-cmd="HH ${prev.id}">◀ ${prev.id}</button><button class="btn sm" data-act="go" data-cmd="HH ${next.id}">${next.id} ▶</button></h1>
+  <div class="kpis">${kpi('Household value',money(s.total))}${kpi('Max drift',s.maxAsset+' '+pp(s.drift[s.maxAsset])+' pp',s.status==='BREACH'?'bad':s.status==='WATCH'?'warn':'good')}${kpi('Equity actual / target',pct(s.eqW)+' / '+pct(s.eqT,0))}${kpi('RMD outstanding',money(s.rmdRemaining),s.rmdRemaining>1?'warn':'')}${kpi('Harvestable losses',money(s.tlh),s.tlh<0?'good':'')}</div>
+  <div class="grid2">
+    <div class="panel"><div class="ph">Allocation vs model</div><div class="pb">${allocBars(h,s)}</div></div>
+    <div class="panel"><div class="ph">Settings &amp; notes</div><div class="pb">
+      <div class="row" style="margin-bottom:8px"><label>Model <select class="f" data-ch="model">${Object.keys(MODELS).map(m=>`<option ${m===h.model?'selected':''}>${m}</option>`).join('')}</select></label>
+      <label>Tolerance band ± <input class="f" type="number" min="1" max="15" step="0.5" value="${h.band}" data-ch="band" style="width:64px"> pp</label></div>
+      <div class="muted" style="margin-bottom:6px">Changing the model or band updates drift and status immediately.</div>
+      <label for="note" class="muted">Advisor notes (saved in this browser)</label>
+      <textarea class="f" id="note" data-ch="note" placeholder="e.g. Client prefers to avoid realizing gains before January.">${esc(S.notes[h.id]||'')}</textarea>
+    </div></div>
+  </div>
+  <div class="panel"><div class="ph">Rebalance <span class="r">sells losses first, then tax-free accounts, then smallest long-term gains; short-term gains last</span></div><div class="pb">
+    <div class="row" style="margin-bottom:8px"><button class="btn pri" data-act="propose">${p?'Recompute proposal':'Propose rebalance'}</button>
+      ${p?`<button class="btn go2" data-act="stageProp">Stage ${p.summary.orders} orders to blotter</button><button class="btn danger" data-act="discard">Discard</button><span class="muted">Priced ${timeStr(p.pricedAt)}</span>`:''}
+      ${staged.length?`<span class="b stg">STAGED</span><button class="link" data-act="go" data-cmd="TRD">${staged[0].id} waiting in TRD</button>`:''}</div>
+    ${p?proposalSummary(p.summary)+tradeTable(p.trades):`<p class="muted">Press <b>Propose rebalance</b> to generate a trade list that brings this household back to its ${h.model} model.</p>`}
+  </div></div>
+  <div class="panel"><div class="ph">Accounts</div><div class="tw"><table><thead><tr><th>Account</th><th>Type</th><th>Owner</th><th class="num">Age</th><th class="num">Value</th><th class="num">Cash</th><th class="num">% of HH</th><th>RMD ${new Date().getFullYear()}</th></tr></thead><tbody>
+  ${h.accounts.map(acc=>{const v=acctValue(acc),r=rmdInfo(acc);return `<tr><td class="amber">${acc.id}</td><td>${acc.type}</td><td>${esc(acc.owner)}</td><td class="num">${acc.age}</td><td class="num">${money(v)}</td><td class="num">${money(acctCash(acc))}</td><td class="num">${pct(v/s.total)}</td>
+    <td>${r?(r.remaining>1?`<span class="b rmd">${money(r.remaining)} left</span> <button class="link" data-act="go" data-cmd="RMD">open RMD</button>`:'<span class="b ok">DONE</span>'):'<span class="muted">n/a</span>'}</td></tr>`;}).join('')}
+  </tbody></table></div></div>
+  <details class="panel"><summary class="ph" style="display:list-item">Tax lots (${h.accounts.reduce((n,a)=>n+a.lots.length,0)})</summary><div class="tw"><table><thead><tr><th>Account</th><th>Fund</th><th>Acquired</th><th>Term</th><th class="num">Shares</th><th class="num">Cost/sh</th><th class="num">Price</th><th class="num">Value</th><th class="num">Unrealized</th></tr></thead><tbody>
+  ${h.accounts.flatMap(acc=>acc.lots.map(l=>{const p=S.prices[l.asset],v=l.shares*p,g=v-l.shares*l.cost;return `<tr><td>${acc.id} <span class="muted">${acc.type}</span></td><td class="amber">${l.asset}</td><td>${l.date}</td><td>${l.asset==='CASH'?'—':isLongTerm(l.date)?'LT':'ST'}</td><td class="num">${l.asset==='CASH'?'—':sh(l.shares)}</td><td class="num">${l.asset==='CASH'?'—':l.cost.toFixed(2)}</td><td class="num">${l.asset==='CASH'?'—':p.toFixed(2)}</td><td class="num">${money(v)}</td><td class="num ${sgn(g)}">${l.asset==='CASH'?'—':money(g)+' ('+pct(g/(l.shares*l.cost))+')'}</td></tr>`;})).join('')}
+  </tbody></table></div></details>`;
+}
+
+function screenTRD(){
+  const st=S.batches.filter(b=>b.status==='STAGED');
+  const notional=st.reduce((x,b)=>x+b.trades.filter(t=>t.asset!=='CASH').reduce((y,t)=>y+t.amount,0),0);
+  const cls={STAGED:'stg',FILLED:'filled',CANCELED:'cancel',REJECTED:'rej'};
+  return `<h1 class="scr">TRD <small>Trade blotter · review, execute (simulated fills) or cancel staged batches</small></h1>
+  <div class="kpis">${kpi('Staged batches',st.length,st.length?'warn':'')}${kpi('Staged orders',st.reduce((x,b)=>x+b.trades.filter(t=>t.asset!=='CASH').length,0))}${kpi('Staged notional',compact(notional))}${kpi('Filled batches',S.batches.filter(b=>b.status==='FILLED').length,'good')}</div>
+  <div class="row" style="margin-bottom:10px"><button class="btn go2" data-act="execAll" ${st.length?'':'disabled'}>Execute all staged (simulated)</button><button class="btn" data-act="csv" ${S.batches.length?'':'disabled'}>Export blotter CSV</button></div>
+  ${S.batches.length?S.batches.map(b=>{const h=getHH(b.hhId);return `<div class="panel"><div class="ph"><span>${b.id} · ${esc(h?h.name:b.hhId)} · ${esc(b.label)}</span><span class="r row"><span class="b ${cls[b.status]}">${b.status}</span>${dtStr(b.ts)}
+    ${b.status==='STAGED'?`<button class="btn sm go2" data-act="exec" data-b="${b.id}">Execute</button><button class="btn sm danger" data-act="cancel" data-b="${b.id}">Cancel</button>`:''}</span></div>
+    <div class="pb">${b.summary?`<div class="muted" style="margin-bottom:6px">${b.summary.orders} orders · turnover ${pct(b.summary.turnover)} · ${b.summary.tax<0?'est. tax benefit':'est. tax cost'} ${money(Math.abs(b.summary.tax))} · max drift ${b.summary.preMax.toFixed(1)} → ${b.summary.postMax.toFixed(1)} pp</div>`:''}${tradeTable(b.trades)}</div></div>`;}).join(''):'<div class="notice">No trades yet. Open a household (BOOK) and press <b>Propose rebalance</b>, or use <b>RMD</b> to raise cash for a distribution.</div>'}`;
+}
+
+function screenRMD(){
+  const rows=[];S.households.forEach(h=>h.accounts.forEach(acc=>{const r=rmdInfo(acc);if(r)rows.push({h,acc,r,cash:acctCash(acc)});}));
+  rows.sort((a,b)=>b.r.remaining-a.r.remaining);
+  const dl=daysToYearEnd(),outst=rows.filter(x=>x.r.remaining>1);
+  const upcoming=[];S.households.forEach(h=>h.accounts.forEach(acc=>{if(acc.type==='Traditional IRA'&&acc.age>=70&&acc.age<RMD_AGE)upcoming.push({h,acc});}));
+  return `<h1 class="scr">RMD <small>Required minimum distributions · Traditional IRAs, owners age ${RMD_AGE}+ · deadline Dec 31</small></h1>
+  <div class="kpis">${kpi('Accounts with RMD',rows.length)}${kpi('Still outstanding',outst.length,outst.length?'bad':'good')}${kpi('$ remaining',money(outst.reduce((s,x)=>s+x.r.remaining,0)),outst.length?'warn':'good')}${kpi('Days to deadline',dl,dl<45?'bad':'')}</div>
+  <div class="panel"><div class="ph">Distribution status <span class="r">required = prior year-end balance ÷ IRS Uniform Lifetime divisor</span></div><div class="tw"><table><thead><tr><th>Household</th><th>Account owner</th><th class="num">Age</th><th class="num">YE balance</th><th class="num">Divisor</th><th class="num">Required</th><th class="num">Taken</th><th class="num">Remaining</th><th class="num">Cash in IRA</th><th>Next step</th></tr></thead><tbody>
+  ${rows.map(({h,acc,r,cash})=>{let step;
+    if(r.remaining<=1)step='<span class="b ok">COMPLETE</span>';
+    else if(cash+0.5>=r.remaining)step=`<button class="btn sm go2" data-act="rmdRecord" data-acc="${acc.id}">Record ${money(r.remaining)} distribution</button>`;
+    else{const staged=S.batches.some(b=>b.status==='STAGED'&&b.hhId===h.id&&b.label.startsWith('RMD'));step=staged?`<span class="b stg">CASH RAISE STAGED</span> <button class="link" data-act="go" data-cmd="TRD">execute in TRD</button>`:`<button class="btn sm pri" data-act="rmdRaise" data-acc="${acc.id}">Raise ${money(r.remaining-cash)} cash</button>`;}
+    return `<tr><td><button class="link" data-act="go" data-cmd="HH ${h.id}">${esc(h.name)}</button></td><td>${esc(acc.owner)} <span class="muted">${acc.id}</span></td><td class="num">${acc.age}</td><td class="num">${money(acc.ye)}</td><td class="num">${r.div}</td><td class="num">${money(r.req)}</td><td class="num">${money(r.taken)}</td><td class="num ${r.remaining>1?'dn':'up'}">${money(r.remaining)}</td><td class="num">${money(cash)}</td><td>${step}</td></tr>`;}).join('')}
+  </tbody></table></div></div>
+  <div class="panel"><div class="ph">Turning ${RMD_AGE} soon (plan ahead)</div><div class="pb">${upcoming.length?upcoming.map(({h,acc})=>`<div>${esc(acc.owner)} (${esc(h.name)}) · age ${acc.age} · first RMD due in ${RMD_AGE-acc.age} year(s)</div>`).join(''):'<span class="muted">None.</span>'}</div></div>
+  <p class="muted">Workflow: <b>Raise cash</b> stages sells of the most over-weight funds inside that IRA → execute in <b>TRD</b> → come back and <b>Record distribution</b>. Simplified rules for the prototype (no spousal table, no inherited IRAs, no first-year April 1 deferral).</p>`;
+}
+
+function screenTLH(){
+  const rows=S.households.flatMap(h=>tlhLots(h)).sort((a,b)=>a.loss-b.loss);
+  const tot=rows.reduce((s,x)=>s+x.loss,0),sv=rows.reduce((s,x)=>s+x.save,0);
+  return `<h1 class="scr">TLH <small>Tax-loss harvesting screen · taxable lots down at least ${money(TLH_MIN_LOSS)} and ${Math.abs(TLH_MIN_PCT*100)}%</small></h1>
+  <div class="kpis">${kpi('Lots flagged',rows.length)}${kpi('Harvestable losses',money(tot),'good')}${kpi('Est. tax saved',money(sv),'good')}${kpi('Households',new Set(rows.map(r=>r.h.id)).size)}</div>
+  <div class="panel"><div class="ph">Loss lots <span class="r">the rebalancer automatically sells these first when the fund is over-weight</span></div><div class="tw"><table><thead><tr><th>Household</th><th>Account</th><th>Fund</th><th>Acquired</th><th>Term</th><th class="num">Cost basis</th><th class="num">Value</th><th class="num">Loss</th><th class="num">Est. tax saved</th></tr></thead><tbody>
+  ${rows.map(x=>`<tr class="click" data-act="go" data-cmd="HH ${x.h.id}"><td><button class="link" data-act="go" data-cmd="HH ${x.h.id}">${esc(x.h.name)}</button></td><td>${x.acc.id}</td><td class="amber">${x.l.asset}</td><td>${x.l.date}</td><td>${x.lt?'LT':'ST'}</td><td class="num">${money(x.basis)}</td><td class="num">${money(x.val)}</td><td class="num dn">${money(x.loss)} (${pct(x.loss/x.basis)})</td><td class="num up">${money(x.save)}</td></tr>`).join('')||'<tr><td colspan="9" class="muted">No harvestable losses at current prices.</td></tr>'}
+  </tbody></table></div></div>
+  <p class="muted">Estimated savings use the assumed ${LT_RATE*100}% long-term / ${ST_RATE*100}% short-term rates. A real system must also check wash-sale rules across all of the client's accounts.</p>`;
+}
+
+function shockedPrices(eq,bd){const p={};ASSETS.forEach(a=>p[a.id]=S.prices[a.id]*(EQ.has(a.id)?1+eq/100:FI.has(a.id)?1+bd/100:1));return p;}
+function screenSTRS(){
+  const sh=S.view.shock;
+  return `<h1 class="scr">STRS <small>Stress test · what happens to the book if markets move?</small></h1>
+  <div class="panel"><div class="ph">Scenario</div><div class="pb">
+    <div class="slider"><label for="eqS">Equity move</label><input type="range" id="eqS" min="-40" max="30" step="1" value="${sh.eq}" data-ch="shockEq"><span class="num" id="eqV">${sh.eq}%</span></div>
+    <div class="slider"><label for="bdS">Bond move</label><input type="range" id="bdS" min="-15" max="10" step="0.5" value="${sh.bd}" data-ch="shockBd"><span class="num" id="bdV">${sh.bd}%</span></div>
+    <div class="row"><span class="muted">Presets:</span><button class="btn sm" data-act="preset" data-eq="-20" data-bd="-4">2022-style bear</button><button class="btn sm" data-act="preset" data-eq="-34" data-bd="3">Sharp crash</button><button class="btn sm" data-act="preset" data-eq="15" data-bd="-2">Strong rally</button><button class="btn sm" data-act="preset" data-eq="0" data-bd="0">No change</button>
+    <span style="flex:1"></span><button class="btn danger" data-act="applyShock" title="Moves the simulated market prices by this scenario">Apply scenario to sim market</button></div>
+  </div></div>
+  <div id="strsOut">${strsOut()}</div>`;
+}
+function strsOut(){
+  const {eq,bd}=S.view.shock,np=shockedPrices(eq,bd);
+  const rows=S.households.map(h=>{const a=hhStats(h),b=hhStats(h,np);return{h,a,b};});
+  const before=rows.filter(r=>r.a.status==='BREACH').length,after=rows.filter(r=>r.b.status==='BREACH').length;
+  const aumA=rows.reduce((s,r)=>s+r.a.total,0),aumB=rows.reduce((s,r)=>s+r.b.total,0);
+  return `<div class="kpis">${kpi('Book value now',compact(aumA))}${kpi('After scenario',compact(aumB),aumB<aumA?'bad':'good')}${kpi('Change',money(aumB-aumA),aumB<aumA?'bad':'good')}${kpi('Out of band now',before)}${kpi('Out of band after',after,after>before?'bad':'good')}</div>
+  <div class="panel"><div class="ph">Impact by household</div><div class="tw"><table><thead><tr><th>Household</th><th>Model</th><th class="num">Value now</th><th class="num">After</th><th class="num">Equity now → after</th><th class="num">Max drift now → after</th><th>Status after</th></tr></thead><tbody>
+  ${rows.sort((x,y)=>y.b.maxAbs-x.b.maxAbs).map(({h,a,b})=>`<tr class="click" data-act="go" data-cmd="HH ${h.id}"><td><button class="link" data-act="go" data-cmd="HH ${h.id}">${esc(h.name)}</button></td><td>${h.model}</td><td class="num">${compact(a.total)}</td><td class="num ${sgn(b.total-a.total)}">${compact(b.total)}</td><td class="num">${pct(a.eqW)} → ${pct(b.eqW)}</td><td class="num">${a.maxAbs.toFixed(1)} → ${b.maxAbs.toFixed(1)}</td><td>${statusBadge(b.status)}</td></tr>`).join('')}
+  </tbody></table></div></div>`;
+}
+
+function screenMODL(){
+  return `<h1 class="scr">MODL <small>Model portfolios (targets in %)</small></h1>
+  <div class="panel"><div class="tw"><table><thead><tr><th>Fund</th><th>Name</th><th>Class</th>${Object.keys(MODELS).map(m=>`<th class="num">${m}</th>`).join('')}</tr></thead><tbody>
+  ${ASSETS.map(a=>`<tr><td class="amber">${a.id}</td><td>${a.name}</td><td class="muted">${a.cls}</td>${Object.keys(MODELS).map(m=>`<td class="num">${MODELS[m][a.id]}%</td>`).join('')}</tr>`).join('')}
+  <tr><td></td><td><b>Households on model</b></td><td></td>${Object.keys(MODELS).map(m=>`<td class="num">${S.households.filter(h=>h.model===m).length}</td>`).join('')}</tr>
+  </tbody></table></div></div><p class="muted">Z-ticker funds are fictional placeholders for broad index funds.</p>`;
+}
+function screenLOG(){
+  return `<h1 class="scr">LOG <small>Activity / audit trail (most recent first)</small></h1>
+  <div class="panel"><div class="tw"><table><thead><tr><th>Time</th><th>Type</th><th>Event</th></tr></thead><tbody>
+  ${S.log.map(e=>`<tr><td class="muted">${dtStr(e.ts)}</td><td class="amber">${e.type}</td><td>${esc(e.msg)}</td></tr>`).join('')}
+  </tbody></table></div></div>`;
+}
+function screenHELP(){
+  const cmds=[['BOOK','Client book: every household, its drift status and flags. Filter, search and sort.'],['DRFT','Heat map of drift by asset class for every household.'],['HH <id|name>','Open a household, e.g. HH H05 or just type ERIKSEN. Change model/band, propose a rebalance.'],['TRD','Trade blotter: execute (simulated) or cancel staged batches; export CSV.'],['RMD','Required minimum distributions still owed this year; raise cash and record distributions.'],['TLH','Taxable lots with harvestable losses and estimated tax saved.'],['STRS','Stress test: drag sliders to see which households breach after a market move.'],['MODL','Model portfolio targets.'],['LOG','Audit trail of every action.'],['TEST','Run the built-in self-test suite.'],['LIVE','Turn the simulated price feed on/off.'],['RESET','Restore the original simulated data.']];
+  return `<h1 class="scr">HELP <small>How to use DriftDesk</small></h1>
+  <div class="panel"><div class="ph">Functions</div><div class="tw"><table><tbody>${cmds.map(([c,d])=>`<tr><td class="amber" style="white-space:nowrap">${esc(c)}</td><td>${esc(d)}</td></tr>`).join('')}</tbody></table></div></div>
+  <div class="panel"><div class="ph">Keyboard</div><div class="pb"><kbd>/</kbd> focus the command line · <kbd>1</kbd>–<kbd>9</kbd> jump to the function keys · <kbd>Esc</kbd> clear command · type a function and press <kbd>Enter</kbd> (a trailing &lt;GO&gt; also works).</div></div>
+  <div class="panel"><div class="ph">What problem does this solve?</div><div class="pb">Small independent advisory firms manage dozens to hundreds of households across taxable, IRA and Roth accounts. Markets move every day, so portfolios drift away from their target mix, and retirees must take required minimum distributions by Dec 31 or pay a 25% penalty. Most small firms track this in spreadsheets because institutional rebalancing software is expensive. DriftDesk shows the whole book on one screen, flags who needs attention, and writes a tax-aware trade list in one click.</div></div>
+  <div class="panel"><div class="ph">About the data</div><div class="pb">Everything is <b class="amber">simulated</b>: 12 fictitious households, fictional "Z" funds and random-walk prices. Your changes are saved only in this browser (localStorage). Type RESET to start over.</div></div>`;
+}
+
+/* ================= self-tests ================= */
+function synthHH(model,dollars,type='Taxable',band=5,costFactor=1,age=60){
+  const acc={id:'T-A1',type,owner:'Test Owner',age,lots:[],ye:0,rmdTaken:0};
+  Object.entries(dollars).forEach(([id,d])=>{if(d>0)acc.lots.push({id:newLotId(),asset:id,shares:d/S.prices[id],cost:S.prices[id]*costFactor,date:'2018-06-01'});});
+  return{id:'TST',name:'Test, "Comma" Household',advisor:'QA',model,band,accounts:[acc]};
+}
+function runTests(){
+  const R=[],T=(name,fn)=>{try{const d=fn();R.push({name,pass:d===true||(d&&d.pass),detail:d&&d.detail||''});}catch(e){R.push({name,pass:false,detail:String(e)});}};
+  const seq0=S.seq;
+  T('Every model portfolio sums to 100%',()=>({pass:Object.values(MODELS).every(m=>Object.values(m).reduce((a,b)=>a+b,0)===100),detail:Object.keys(MODELS).join(', ')}));
+  T('Every household\'s weights sum to 100%',()=>{const bad=S.households.filter(h=>Math.abs(Object.values(hhStats(h).w).reduce((a,b)=>a+b,0)-1)>1e-9);return{pass:!bad.length,detail:`${S.households.length} households checked`};});
+  T('Drift math: 45% ZLC vs 35% target = +10 pp, BREACH',()=>{const h=synthHH('Balanced',{ZLC:45000,ZSC:6000,ZIN:14000,ZEM:5000,ZBD:20000,ZST:7000,CASH:3000});const s=hhStats(h);
+    return{pass:Math.abs(s.drift.ZLC-10)<1e-6&&Math.abs(s.drift.ZBD+10)<1e-6&&s.status==='BREACH',detail:`ZLC ${pp(s.drift.ZLC)}, ZBD ${pp(s.drift.ZBD)}, ${s.status}`};});
+  T('Rebalance brings every household within 0.5 pp of target',()=>{const out=S.households.map(h=>{const p=proposeRebalance(clone(h));return{h,post:p.summary.postMax};});const worst=out.reduce((a,b)=>b.post>a.post?b:a);
+    return{pass:worst.post<=0.5,detail:`worst after rebalance: ${worst.h.id} ${worst.post.toFixed(2)} pp`};});
+  T('Rebalance conserves household value (no money created or lost)',()=>{let maxErr=0;S.households.forEach(h=>{const s=proposeRebalance(clone(h)).summary;maxErr=Math.max(maxErr,Math.abs(s.postTotal-s.preTotal));});return{pass:maxErr<1,detail:`max difference ${money(maxErr,2)}`};});
+  T('No sell exceeds the shares in its lot; no negative quantities',()=>{let bad=0,n=0;S.households.forEach(h=>{const c=clone(h);proposeRebalance(c).trades.forEach(t=>{n++;if(!(t.shares>0))bad++;if(t.side==='SELL'){const lot=c.accounts.find(a=>a.id===t.acct).lots.find(l=>l.id===t.lotId);if(!lot||t.shares>lot.shares+1e-6)bad++;}});});return{pass:!bad,detail:`${n} trades checked, ${bad} bad`};});
+  T('Tax-aware: sells the loss lot before the gain lot',()=>{const h=synthHH('Balanced',{ZSC:6000,ZIN:14000,ZEM:5000,ZBD:20000,ZST:7000,CASH:3000});const acc=h.accounts[0];
+    const lossLot={id:'LOSS',asset:'ZLC',shares:20000/S.prices.ZLC,cost:S.prices.ZLC*1.2,date:'2019-01-01'},gainLot={id:'GAIN',asset:'ZLC',shares:25000/S.prices.ZLC,cost:S.prices.ZLC*0.5,date:'2017-01-01'};acc.lots.push(gainLot,lossLot);
+    const sells=proposeRebalance(h).trades.filter(t=>t.side==='SELL'&&t.asset==='ZLC');return{pass:sells.length>0&&sells.every(t=>t.lotId==='LOSS'),detail:`ZLC sells from: ${sells.map(t=>t.lotId).join(', ')}`};});
+  T('Already-balanced household produces zero orders',()=>{const t=MODELS.Growth,d={};Object.keys(t).forEach(k=>d[k]=t[k]*1000);const p=proposeRebalance(synthHH('Growth',d));return{pass:p.summary.orders===0,detail:`${p.summary.orders} orders`};});
+  T('RMD: age 76, $237,000 balance → $10,000 required',()=>{const h=synthHH('Conservative',{ZBD:100000},'Traditional IRA',5,1,76);h.accounts[0].ye=237000;const r=rmdInfo(h.accounts[0]);return{pass:Math.abs(r.req-10000)<0.01&&r.div===23.7,detail:`divisor ${r.div}, required ${money(r.req,2)}`};});
+  T('RMD cash raise leaves enough cash to cover the distribution',()=>{const out=[];S.households.forEach(h=>h.accounts.forEach(acc=>{const r=rmdInfo(acc);if(r&&r.remaining>1){const c=clone(h);const p=proposeRmdCash(c,acc.id);if(p&&p.trades.length)applyTradesToHH(c,p.trades);const ca=acctCash(c.accounts.find(a=>a.id===acc.id));out.push(ca+0.5>=r.remaining);}}));return{pass:out.length>0&&out.every(Boolean),detail:`${out.filter(Boolean).length}/${out.length} accounts covered`};});
+  T('Execution is atomic: stale batch is rejected and holdings unchanged',()=>{const h=clone(S.households.find(x=>hhStats(x).status==='BREACH')||S.households[0]);const p=proposeRebalance(h);const sell=p.trades.find(t=>t.side==='SELL');
+    const acc=h.accounts.find(a=>a.id===sell.acct);acc.lots=acc.lots.filter(l=>l.id!==sell.lotId);const before=JSON.stringify(h);const ok=applyTradesToHH(h,p.trades);return{pass:ok===false&&JSON.stringify(h)===before,detail:ok?'applied (wrong)':'rejected, no changes'};});
+  T('CSV export quotes names containing commas and quotes',()=>{const fake={id:'B0',hhId:'TST',label:'x',ts:Date.now(),status:'STAGED',trades:[{side:'BUY',acct:'T-A1',acctType:'Taxable',asset:'ZLC',shares:1,price:100,amount:100,gain:0,term:'—',reason:'a, b'}]};
+    S.households.push(synthHH('Balanced',{ZLC:1}));let csv;try{csv=tradesCsv([fake]);}finally{S.households.pop();}const lines=csv.split('\n');return{pass:lines.length===2&&lines[1].includes('"Test, ""Comma"" Household"')&&lines[1].includes('"a, b"')&&lines[1].startsWith('SIMULATED'),detail:lines[1].slice(0,60)+'…'};});
+  T('Stress test: a 20% equity drop lowers every household\'s equity weight',()=>{const np=shockedPrices(-20,0);const bad=S.households.filter(h=>!(hhStats(h,np).eqW<hhStats(h).eqW));return{pass:!bad.length,detail:bad.length?bad.map(h=>h.id).join(','):'all 12 lower'};});
+  S.seq=Math.max(S.seq,seq0);
+  return R;
+}
+function screenTEST(){
+  const t0=performance.now(),R=runTests(),ms=performance.now()-t0,np=R.filter(r=>r.pass).length;
+  log('TEST',`Self-test: ${np}/${R.length} passed`);save();
+  return `<h1 class="scr">TEST <small>Built-in self-test suite · runs against the current data in ${ms.toFixed(0)} ms</small></h1>
+  <div class="kpis">${kpi('Passed',np+' / '+R.length,np===R.length?'good':'bad')}${kpi('Failed',R.length-np,R.length-np?'bad':'good')}</div>
+  <div class="panel"><div class="tw"><table><thead><tr><th>#</th><th>Test</th><th>Result</th><th>Detail</th></tr></thead><tbody>
+  ${R.map((r,i)=>`<tr><td>${i+1}</td><td>${esc(r.name)}</td><td class="${r.pass?'pass':'fail'}">${r.pass?'PASS':'FAIL'}</td><td class="muted">${esc(r.detail)}</td></tr>`).join('')}
+  </tbody></table></div></div><button class="btn" data-act="go" data-cmd="TEST">Run again</button>`;
+}
+
+/* ================= router ================= */
+const RENDER={BOOK:screenBOOK,DRFT:screenDRFT,HH:screenHH,TRD:screenTRD,RMD:screenRMD,TLH:screenTLH,STRS:screenSTRS,MODL:screenMODL,LOG:screenLOG,HELP:screenHELP,TEST:screenTEST};
+function render(){
+  $('#screen').innerHTML=RENDER[S.view.screen]();
+  renderFkeys();renderAlerts();renderTape();
+  const lb=$('#liveBtn');lb.classList.toggle('on',S.live);$('#liveTxt').textContent=S.live?'SIM FEED ON':'SIM FEED PAUSED';
+}
+function show(screen,hh){
+  if(screen==='HH'&&hh&&hh!==S.view.hh)S.proposal=null;
+  if(screen!=='HH')S.proposal=S.proposal; // keep proposal while browsing
+  S.view.screen=screen;if(hh)S.view.hh=hh;
+  render();save();window.scrollTo(0,0);
+}
+function findHH(q){
+  q=(q||'').trim().toLowerCase();if(!q)return null;
+  return S.households.find(h=>h.id.toLowerCase()===q)||S.households.find(h=>h.name.toLowerCase().startsWith(q))||S.households.find(h=>h.name.toLowerCase().includes(q));
+}
+function run(raw){
+  const s=raw.replace(/<GO>\s*$/i,'').trim();if(!s)return;
+  const [c0,...rest]=s.split(/\s+/),c=c0.toUpperCase(),arg=rest.join(' ');
+  if(c==='HH'){const h=arg?findHH(arg):getHH(S.view.hh)||S.households[0];if(h)return show('HH',h.id);return toast(`No household matches "${arg}"`);}
+  if(RENDER[c])return show(c);
+  if(c==='LIVE'){S.live=!S.live;log('SYS','Simulated feed '+(S.live?'resumed':'paused'));render();save();return;}
+  if(c==='RESET'){if(confirm('Restore the original simulated data? Your trades and notes will be erased.')){try{localStorage.removeItem(STORE_KEY)}catch(e){}S=buildInitialState();S.proposal=null;render();save();toast('Simulated data restored.');}return;}
+  const h=findHH(s);if(h)return show('HH',h.id);
+  toast(`Unknown function "${s}". Type HELP for the list.`);
+}
+
+/* ================= events ================= */
+document.addEventListener('click',e=>{
+  const el=e.target.closest('[data-act]');if(!el)return;
+  if(el.tagName==='TR'&&e.target.closest('button'))return; // inner button handles it
+  const act=el.dataset.act;
+  switch(act){
+    case 'go':run(el.dataset.cmd);break;
+    case 'live':run('LIVE');break;
+    case 'sort':{const k=el.dataset.key;S.view.sort=S.view.sort.key===k?{key:k,dir:-S.view.sort.dir}:{key:k,dir:k==='name'||k==='id'||k==='model'||k==='advisor'?1:-1};$('#bookTable').innerHTML=bookTable();save();break;}
+    case 'filter':S.view.filter=el.dataset.f;render();save();break;
+    case 'propose':{const h=getHH(S.view.hh);S.proposal=proposeRebalance(h);log('PROP',`Rebalance proposed for ${h.name}: ${S.proposal.summary.orders} orders, max drift ${S.proposal.summary.preMax.toFixed(1)} → ${S.proposal.summary.postMax.toFixed(1)} pp`);render();save();break;}
+    case 'discard':S.proposal=null;render();break;
+    case 'stageProp':{const b=stage(S.proposal);if(b){S.proposal=null;toast(`${b.id} staged. Execute it in TRD.`);render();}break;}
+    case 'rebalAll':{const br=S.households.filter(h=>hhStats(h).status==='BREACH');let n=0;br.forEach(h=>{const p=proposeRebalance(h);if(stage(p))n++;});toast(n?`${n} rebalance batches staged. Review them in TRD.`:'No households are out of band.');if(n)show('TRD');else render();break;}
+    case 'exec':{const b=S.batches.find(x=>x.id===el.dataset.b);const ok=executeBatch(b);toast(ok?`${b.id} filled (simulated).`:`${b.id} rejected: holdings changed since it was staged.`);render();save();break;}
+    case 'execAll':{let f=0,r=0;S.batches.slice().reverse().forEach(b=>{if(b.status==='STAGED'){executeBatch(b)?f++:r++;}});toast(`${f} batch(es) filled${r?`, ${r} rejected`:''} (simulated).`);render();save();break;}
+    case 'cancel':{const b=S.batches.find(x=>x.id===el.dataset.b);b.status='CANCELED';log('TRD',`${b.id} canceled by user`);render();save();break;}
+    case 'csv':download(`driftdesk-blotter-${todayISO()}.csv`,tradesCsv(S.batches));log('TRD','Blotter exported to CSV');save();toast('CSV downloaded.');break;
+    case 'rmdRaise':{const accId=el.dataset.acc,h=S.households.find(x=>x.accounts.some(a=>a.id===accId));const p=proposeRmdCash(h,accId);
+      if(p&&p.enough){toast('Enough cash already. Record the distribution.');break;}const b=stage(p);if(b){toast(`${b.id} staged: sells ${money(p.trades.filter(t=>t.side==='SELL').reduce((s,t)=>s+t.amount,0))} inside the IRA. Execute it in TRD.`);render();}break;}
+    case 'rmdRecord':{const accId=el.dataset.acc,h=S.households.find(x=>x.accounts.some(a=>a.id===accId)),acc=h.accounts.find(a=>a.id===accId),r=rmdInfo(acc),c=acc.lots.find(l=>l.asset==='CASH');
+      if(!c||c.shares+0.5<r.remaining){toast('Not enough cash in the IRA. Raise cash first.');break;}
+      const amt=Math.min(r.remaining,c.shares);c.shares=+(c.shares-amt).toFixed(2);if(c.shares<0.01)acc.lots.splice(acc.lots.indexOf(c),1);acc.rmdTaken=(acc.rmdTaken||0)+r.remaining;
+      log('RMD',`Distribution of ${money(r.remaining)} recorded for ${acc.owner} (${acc.id})`);toast(`RMD complete for ${acc.owner}.`);render();save();break;}
+    case 'preset':S.view.shock={eq:+el.dataset.eq,bd:+el.dataset.bd};render();save();break;
+    case 'applyShock':{const {eq,bd}=S.view.shock;if(!eq&&!bd){toast('Scenario is "no change".');break;}const np=shockedPrices(eq,bd);ASSETS.forEach(a=>{S.prices[a.id]=np[a.id];S.hist[a.id].push(np[a.id]);if(S.hist[a.id].length>60)S.hist[a.id].shift();});
+      log('MKT',`Scenario applied to simulated market: equities ${eq}%, bonds ${bd}%`);S.view.shock={eq:0,bd:0};toast('Scenario applied. Check BOOK and DRFT for new breaches.');render();save();break;}
+  }
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&e.target.classList&&e.target.classList.contains('alert')){e.target.click();return;}
+  const typing=/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+  if(e.key==='Escape'&&document.activeElement.id==='cmd'){$('#cmd').value='';return;}
+  if(typing||e.ctrlKey||e.metaKey||e.altKey)return;
+  if(e.key==='/'){e.preventDefault();$('#cmd').focus();return;}
+  if(/^[1-9]$/.test(e.key)){const sc=SCREENS[+e.key-1];if(sc)run(sc[0]);}
+});
+document.addEventListener('input',e=>{
+  const ch=e.target.dataset&&e.target.dataset.ch;
+  if(e.target.id==='bookQ'){S.view.q=e.target.value;$('#bookTable').innerHTML=bookTable();return;}
+  if(ch==='note'){S.notes[S.view.hh]=e.target.value;save();return;}
+  if(ch==='shockEq'||ch==='shockBd'){S.view.shock[ch==='shockEq'?'eq':'bd']=+e.target.value;$('#eqV').textContent=S.view.shock.eq+'%';$('#bdV').textContent=S.view.shock.bd+'%';$('#strsOut').innerHTML=strsOut();}
+});
+document.addEventListener('change',e=>{
+  const ch=e.target.dataset&&e.target.dataset.ch,h=getHH(S.view.hh);
+  if(ch==='model'){const old=h.model;h.model=e.target.value;S.proposal=null;log('CFG',`${h.name}: model ${old} → ${h.model}`);render();save();}
+  if(ch==='band'){const v=+e.target.value;if(!(v>=1&&v<=15)){toast('Band must be between 1 and 15 pp.');e.target.value=h.band;return;}h.band=v;S.proposal=null;log('CFG',`${h.name}: tolerance band set to ±${v} pp`);render();save();}
+  if(ch==='shockEq'||ch==='shockBd')save();
+});
+$('#cmdForm').addEventListener('submit',e=>{e.preventDefault();const v=$('#cmd').value;$('#cmd').value='';run(v);});
+
+/* ================= boot ================= */
+S=load()||buildInitialState();
+S.proposal=null;
+renderDatalist();render();save();
+const clk=()=>{$('#clock').textContent=new Date().toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});};clk();setInterval(clk,1000);
+let ticks=0;
+setInterval(()=>{
+  if(!S.live||document.hidden)return;
+  tick();renderTape();
+  const a=document.activeElement,busy=a&&$('#screen').contains(a)&&/INPUT|TEXTAREA|SELECT/.test(a.tagName);
+  if(!busy&&['BOOK','DRFT'].includes(S.view.screen)){const y=window.scrollY;$('#screen').innerHTML=RENDER[S.view.screen]();window.scrollTo(0,y);}
+  if(S.view.screen==='STRS'&&$('#strsOut'))$('#strsOut').innerHTML=strsOut();
+  if(++ticks%4===0){renderAlerts();save();}
+},2500);
+window.DriftDesk={get state(){return S},runTests};
+})();
+</script>
+</body>
+</html>
